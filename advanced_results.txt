@@ -1,0 +1,17 @@
+StronglyEntanglingLayers ansatz, 8 qubits, 3 layers, 60 epochs
+Final train acc: 0.901
+Final test acc:  0.947
+Time: 105.6s
+
+Epoch-by-epoch test accuracy:
+  Epoch  10: 0.684
+  Epoch  20: 0.868
+  Epoch  30: 0.921
+  Epoch  40: 0.895
+  Epoch  50: 0.921
+  Epoch  60: 0.947
+
+Comparison:
+  Custom ring-CNOT ansatz (8q,3L, 30 epochs): 93.9%
+  StronglyEntanglingLayers (8q,3L, 60 epochs): 94.7%
+  Classical Logistic Regression: 98.2%
