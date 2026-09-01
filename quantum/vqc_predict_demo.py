@@ -8,21 +8,24 @@ in the same order as sklearn's load_breast_cancer().feature_names.
 
 Run this file directly to see a demo prediction on a real test sample.
 """
+import os
 import pennylane as qml
 from pennylane import numpy as np
 import numpy as onp
 import joblib
 from sklearn.datasets import load_breast_cancer
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 N_QUBITS = 8
 N_LAYERS = 3
 
 # -------------------- Load saved pipeline + models --------------------
-scaler = joblib.load("saved_scaler.joblib")
-pca = joblib.load("saved_pca.joblib")
-angle_scaler = joblib.load("saved_angle_scaler.joblib")
-classical_model = joblib.load("saved_classical_model.joblib")
-vqc_weights = np.array(onp.load("saved_vqc_weights.npy"), requires_grad=False)
+scaler = joblib.load(os.path.join(BASE_DIR, "vqc_scaler.joblib"))
+pca = joblib.load(os.path.join(BASE_DIR, "vqc_pca.joblib"))
+angle_scaler = joblib.load(os.path.join(BASE_DIR, "vqc_angle_scaler.joblib"))
+classical_model = joblib.load(os.path.join(BASE_DIR, "quantum_domain_classical_baseline.joblib"))
+vqc_weights = np.array(onp.load(os.path.join(BASE_DIR, "vqc_weights.npy")), requires_grad=False)
 
 dev = qml.device("default.qubit", wires=N_QUBITS)
 

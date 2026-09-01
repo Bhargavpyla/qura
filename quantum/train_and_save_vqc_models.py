@@ -5,6 +5,7 @@ so the demo can load pre-trained weights instantly instead of retraining live.
 Also saves the fitted preprocessing objects (scaler, PCA, angle scaler) since
 new demo inputs need to go through the exact same transformation pipeline.
 """
+import os
 import pennylane as qml
 from pennylane import numpy as np
 import numpy as onp  # plain numpy for saving (pennylane's numpy wraps autograd)
@@ -16,6 +17,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import joblib
 import time
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 N_QUBITS = 8
 N_LAYERS = 3
@@ -99,14 +102,14 @@ print(f"Training time: {elapsed:.1f}s")
 # -------------------- SAVE EVERYTHING --------------------
 print("\nSaving models and preprocessing pipeline...")
 
-joblib.dump(scaler, "saved_scaler.joblib")
-joblib.dump(pca, "saved_pca.joblib")
-joblib.dump(angle_scaler, "saved_angle_scaler.joblib")
-joblib.dump(clf, "saved_classical_model.joblib")
-onp.save("saved_vqc_weights.npy", onp.array(weights))
+joblib.dump(scaler, os.path.join(BASE_DIR, "vqc_scaler.joblib"))
+joblib.dump(pca, os.path.join(BASE_DIR, "vqc_pca.joblib"))
+joblib.dump(angle_scaler, os.path.join(BASE_DIR, "vqc_angle_scaler.joblib"))
+joblib.dump(clf, os.path.join(BASE_DIR, "quantum_domain_classical_baseline.joblib"))
+onp.save(os.path.join(BASE_DIR, "vqc_weights.npy"), onp.array(weights))
 
 # save a small metadata file too
-with open("model_metadata.txt", "w") as f:
+with open(os.path.join(BASE_DIR, "model_metadata.txt"), "w") as f:
     f.write(f"N_QUBITS={N_QUBITS}\n")
     f.write(f"N_LAYERS={N_LAYERS}\n")
     f.write(f"classical_test_acc={classical_acc:.4f}\n")
@@ -115,9 +118,9 @@ with open("model_metadata.txt", "w") as f:
     f.write("feature_names=" + ",".join(data.feature_names) + "\n")
 
 print("Done. Saved files:")
-print("  saved_scaler.joblib")
-print("  saved_pca.joblib")
-print("  saved_angle_scaler.joblib")
-print("  saved_classical_model.joblib")
-print("  saved_vqc_weights.npy")
+print("  vqc_scaler.joblib")
+print("  vqc_pca.joblib")
+print("  vqc_angle_scaler.joblib")
+print("  quantum_domain_classical_baseline.joblib")
+print("  vqc_weights.npy")
 print("  model_metadata.txt")

@@ -3,6 +3,7 @@ Advanced experiment: try PennyLane's built-in StronglyEntanglingLayers
 template (a more sophisticated ansatz than our hand-rolled ring-CNOT one),
 and push epochs higher on the best config found so far (8 qubits, 3 layers).
 """
+import os
 import pennylane as qml
 from pennylane import numpy as np
 from sklearn.datasets import load_breast_cancer
@@ -11,6 +12,8 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
 import time
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 data = load_breast_cancer()
 X, y_raw = data.data, data.target
@@ -80,7 +83,7 @@ print("\nEpoch-by-epoch test accuracy:")
 for epoch, acc in history:
     print(f"  Epoch {epoch:3d}: {acc:.3f}")
 
-with open("advanced_results.txt", "w") as f:
+with open(os.path.join(BASE_DIR, "advanced_results.txt"), "w") as f:
     f.write("StronglyEntanglingLayers ansatz, 8 qubits, 3 layers, 60 epochs\n")
     f.write(f"Final train acc: {train_acc:.3f}\n")
     f.write(f"Final test acc:  {test_acc:.3f}\n")

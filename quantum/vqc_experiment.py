@@ -2,6 +2,7 @@
 Experiment sweep: different qubit counts / layer counts for the VQC,
 compared against the classical baseline. Results logged to results.txt
 """
+import os
 import pennylane as qml
 from pennylane import numpy as np
 from sklearn.datasets import load_breast_cancer
@@ -11,6 +12,8 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import time
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 data = load_breast_cancer()
 X, y_raw = data.data, data.target
@@ -94,7 +97,7 @@ for n_qubits, n_layers in configs:
     results.append(line)
     print(line, flush=True)
 
-with open("results.txt", "w") as f:
+with open(os.path.join(BASE_DIR, "results.txt"), "w") as f:
     f.write("\n".join(results))
 
 print("\nDone. Results saved to results.txt")
