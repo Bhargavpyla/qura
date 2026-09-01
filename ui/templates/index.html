@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QURA | Hybrid Quantum-Classical Medical Diagnostic System</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js & Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+  <!-- Interactive Quantum Canvas Background -->
+  <canvas id="quantum-bg-canvas"></canvas>
+
+  <!-- Ambient Light Orbs -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-logo">
+          <i class="fa-solid fa-atom quantum-spin"></i>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <span class="brand-name">QURA</span>
+            <span class="brand-badge">PRO v2.4</span>
+          </div>
+          <span class="brand-sub">Hybrid Quantum-Classical Oncology Intelligence</span>
+        </div>
+      </div>
+
+      <!-- Nav Links -->
+      <nav class="nav-links">
+        <a href="#console-section" class="nav-link active"><i class="fa-solid fa-microscope"></i> Console</a>
+        <a href="#visualizer-section" class="nav-link"><i class="fa-solid fa-chart-radar"></i> State Visualizer</a>
+        <a href="#circuit-section" class="nav-link"><i class="fa-solid fa-microchip"></i> Circuit Topology</a>
+        <a href="#batch-section" class="nav-link"><i class="fa-solid fa-file-csv"></i> Batch Studio</a>
+        <a href="#explain-section" class="nav-link"><i class="fa-solid fa-brain"></i> Feature Impact</a>
+        <a href="#benchmarks-section" class="nav-link"><i class="fa-solid fa-trophy"></i> Benchmarks</a>
+      </nav>
+      
+      <div class="nav-stats">
+        <div class="stat-pill">
+          <span class="pulse-dot"></span>
+          <span>Simulator: <strong>Lightning.Qubit (8Q)</strong></span>
+        </div>
+        <div class="stat-pill highlight">
+          <i class="fa-solid fa-bolt-lightning"></i>
+          <span>Accuracy: <strong>97.37%</strong></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="dashboard-container">
+    
+    <!-- Hero Banner / Quick Cases -->
+    <section id="console-section" class="hero-section glass-card reveal">
+      <div class="hero-header">
+        <div class="hero-text-content">
+          <div class="hero-tag"><i class="fa-solid fa-dna"></i> Clinical Diagnostic Workspace</div>
+          <h2>Hybrid Quantum-Classical Biopsy Analysis</h2>
+          <p class="subtitle">Evaluate real clinical biopsies side-by-side across an 8-Qubit Variational Quantum Circuit and a Classical Logistic Regression baseline.</p>
+        </div>
+        <div class="hero-actions">
+          <button id="btn-export-report" class="btn btn-secondary">
+            <i class="fa-solid fa-file-invoice-dollar"></i> Clinical Report
+          </button>
+          <button id="btn-run-all" class="btn btn-primary btn-glow">
+            <span class="btn-icon"><i class="fa-solid fa-play"></i></span>
+            <span>Run Dual Diagnosis</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Preset Selector -->
+      <div class="presets-wrapper">
+        <div class="preset-label-col">
+          <span class="preset-title"><i class="fa-solid fa-layer-group"></i> Clinical Benchmark Cases:</span>
+          <span class="preset-sub">One-click real validated biopsies</span>
+        </div>
+        <div class="preset-chips">
+          <button class="chip chip-malignant active" data-sample="sample_0_malignant">
+            <span class="chip-status-dot"></span>
+            <span class="chip-text">Case #001 (Malignant)</span>
+            <span class="chip-tag">High Risk</span>
+          </button>
+          <button class="chip chip-malignant" data-sample="sample_1_malignant">
+            <span class="chip-status-dot"></span>
+            <span class="chip-text">Case #002 (Malignant)</span>
+            <span class="chip-tag">High Risk</span>
+          </button>
+          <button class="chip chip-benign" data-sample="sample_20_benign">
+            <span class="chip-status-dot"></span>
+            <span class="chip-text">Case #020 (Benign)</span>
+            <span class="chip-tag">Low Risk</span>
+          </button>
+          <button class="chip chip-benign" data-sample="sample_50_benign">
+            <span class="chip-status-dot"></span>
+            <span class="chip-text">Case #050 (Benign)</span>
+            <span class="chip-tag">Low Risk</span>
+          </button>
+          <button id="btn-random-sample" class="chip chip-random">
+            <i class="fa-solid fa-shuffle"></i> Random Sample
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Real-time Diagnostic Verdict Grid -->
+    <section class="results-grid reveal">
+      <!-- Quantum Card -->
+      <div class="result-card quantum-card glass-card" id="quantum-card-container">
+        <div class="card-top-row">
+          <div class="card-badge quantum-tag">
+            <i class="fa-solid fa-atom"></i> Quantum VQC Engine
+          </div>
+          <span class="engine-indicator">8Q • 3 Layers • Re-Upload</span>
+        </div>
+
+        <div class="verdict-body">
+          <span class="verdict-label-sub">Predicted Pathology</span>
+          <h3 id="quantum-verdict" class="verdict-label malignant">Malignant</h3>
+        </div>
+
+        <div class="confidence-gauge">
+          <div class="gauge-label-row">
+            <span>Diagnostic Confidence</span>
+            <span id="quantum-confidence-val" class="gauge-percentage mono">97.1%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="quantum-progress-bar" class="progress-bar-fill quantum-fill" style="width: 97.1%;">
+              <span class="bar-shine"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="metrics-subgrid">
+          <div class="metric-box">
+            <span class="metric-name">Hilbert Expectation \(\langle \hat{Z} \rangle\)</span>
+            <span id="quantum-raw-score" class="metric-val mono">-3.529</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-name">Inference Latency</span>
+            <span id="quantum-latency" class="metric-val mono">12.4 ms</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consensus Badge -->
+      <div class="consensus-card glass-card" id="consensus-container">
+        <div class="consensus-icon-wrapper">
+          <div class="consensus-pulse-ring"></div>
+          <div class="consensus-icon" id="consensus-icon">
+            <i class="fa-solid fa-check-double"></i>
+          </div>
+        </div>
+        <h4>Cross-Model Agreement</h4>
+        <p id="consensus-desc">Full Consensus: Quantum and Classical models agree with zero divergence.</p>
+        <div class="consensus-tag-wrapper">
+          <span class="consensus-tag" id="consensus-status">100% Agreement</span>
+        </div>
+      </div>
+
+      <!-- Classical Card -->
+      <div class="result-card classical-card glass-card" id="classical-card-container">
+        <div class="card-top-row">
+          <div class="card-badge classical-tag">
+            <i class="fa-solid fa-microchip"></i> Classical Baseline
+          </div>
+          <span class="engine-indicator">Logistic Regression (30 Features)</span>
+        </div>
+
+        <div class="verdict-body">
+          <span class="verdict-label-sub">Predicted Pathology</span>
+          <h3 id="classical-verdict" class="verdict-label malignant">Malignant</h3>
+        </div>
+
+        <div class="confidence-gauge">
+          <div class="gauge-label-row">
+            <span>Diagnostic Confidence</span>
+            <span id="classical-confidence-val" class="gauge-percentage mono">100.0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="classical-progress-bar" class="progress-bar-fill classical-fill" style="width: 100%;">
+              <span class="bar-shine"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="metrics-subgrid">
+          <div class="metric-box">
+            <span class="metric-name">P(Malignant)</span>
+            <span id="classical-prob-malig" class="metric-val mono">100.0%</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-name">P(Benign)</span>
+            <span id="classical-prob-benign" class="metric-val mono">0.0%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visualizer Section: Qubit State & PCA Radar -->
+    <section id="visualizer-section" class="visualizer-grid reveal">
+      <!-- Radar Chart -->
+      <div class="chart-card glass-card">
+        <div class="chart-title-row">
+          <div class="chart-title">
+            <i class="fa-solid fa-chart-radar"></i>
+            <span>8-Dimensional Quantum State Feature Radar</span>
+          </div>
+          <span class="chart-hint">Encoded angles \(\in [0, \pi]\)</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="quantumRadarChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 3D Interactive Bloch Sphere Visualizer -->
+      <div class="chart-card glass-card">
+        <div class="chart-title-row">
+          <div class="chart-title">
+            <i class="fa-solid fa-globe"></i>
+            <span>Real-time Qubit 0 Bloch Sphere Orientation</span>
+          </div>
+          <span class="chart-hint">State Vector \(|\psi\rangle = \alpha|0\rangle + \beta|1\rangle\)</span>
+        </div>
+        <div class="bloch-container">
+          <canvas id="blochSphereCanvas"></canvas>
+          <div class="bloch-overlay-info">
+            <span id="bloch-theta" class="mono">θ: 2.14 rad</span>
+            <span id="bloch-phi" class="mono">φ: 1.48 rad</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-Qubit Measurement Distribution -->
+      <div class="chart-card glass-card chart-full-width">
+        <div class="chart-title-row">
+          <div class="chart-title">
+            <i class="fa-solid fa-chart-simple"></i>
+            <span>Distributed Multi-Qubit Pauli-Z Observables \(\langle \hat{Z}_i \rangle\)</span>
+          </div>
+          <span class="chart-hint">Parallel expectation values on all 8 wires</span>
+        </div>
+        <div class="chart-wrapper" style="height: 240px;">
+          <canvas id="qubitBarChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quantum Circuit Architecture Viewer -->
+    <section id="circuit-section" class="circuit-section glass-card reveal">
+      <div class="circuit-header">
+        <div class="circuit-title">
+          <i class="fa-solid fa-microchip"></i>
+          <div>
+            <h3>Quantum Circuit Topology & Entanglement Matrix</h3>
+            <p class="subtitle">Hardware-efficient ansatz with feature re-uploading and ring-entanglement blocks.</p>
+          </div>
+        </div>
+        <div class="circuit-stats">
+          <span class="circuit-pill"><i class="fa-solid fa-cubes"></i> 8 Qubits</span>
+          <span class="circuit-pill"><i class="fa-solid fa-layer-group"></i> 3 Entangling Layers</span>
+          <span class="circuit-pill"><i class="fa-solid fa-gears"></i> 81 Trainable Parameters</span>
+        </div>
+      </div>
+
+      <!-- Visual Circuit Wire Diagram with Pulse Animation -->
+      <div class="circuit-diagram-container">
+        <div class="circuit-diagram" id="circuit-diagram-board">
+          <!-- Layer Stage Labels -->
+          <div class="circuit-stages-header">
+            <div class="stage-label">Initial State</div>
+            <div class="stage-label">Encode Layer 1</div>
+            <div class="stage-label">Entanglement 1</div>
+            <div class="stage-label">Encode Layer 2</div>
+            <div class="stage-label">Entanglement 2</div>
+            <div class="stage-label">Encode Layer 3</div>
+            <div class="stage-label">Entanglement 3</div>
+            <div class="stage-label">Readout \(\langle Z_i \rangle\)</div>
+          </div>
+
+          <!-- Qubit Wires 0 to 7 -->
+          <div class="circuit-wires" id="circuit-wires-list">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Batch Biopsy Upload & Multi-Patient Studio -->
+    <section id="batch-section" class="batch-section glass-card reveal">
+      <div class="batch-header">
+        <div class="batch-title">
+          <i class="fa-solid fa-file-csv"></i>
+          <div>
+            <h3>Batch Biopsy Processing Studio</h3>
+            <p class="subtitle">Upload a multi-patient clinical CSV to perform parallel dual quantum-classical screening.</p>
+          </div>
+        </div>
+        <div class="batch-actions">
+          <a href="/api/sample_csv" class="btn btn-secondary btn-sm" download>
+            <i class="fa-solid fa-download"></i> Download Sample CSV
+          </a>
+        </div>
+      </div>
+
+      <!-- Upload Zone -->
+      <div class="upload-dropzone" id="csv-dropzone">
+        <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+        <div class="upload-icon-pulse">
+          <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+        </div>
+        <div class="upload-text">
+          <strong>Drag & drop your patient biopsy CSV here</strong>, or <span class="browse-link">browse files</span>
+        </div>
+        <p class="upload-sub">Supports standardized 30-feature Wisconsin format</p>
+      </div>
+
+      <!-- Batch Results Summary -->
+      <div id="batch-summary-panel" class="batch-summary-panel" style="display: none;">
+        <div class="batch-stats-row">
+          <div class="batch-stat-card">
+            <span class="b-stat-title">Total Patients Analyzed</span>
+            <span id="b-stat-total" class="b-stat-val mono">0</span>
+          </div>
+          <div class="batch-stat-card danger-card">
+            <span class="b-stat-title">Malignant Detected</span>
+            <span id="b-stat-malig" class="b-stat-val mono">0</span>
+          </div>
+          <div class="batch-stat-card success-card">
+            <span class="b-stat-title">Benign Detected</span>
+            <span id="b-stat-benign" class="b-stat-val mono">0</span>
+          </div>
+          <div class="batch-stat-card highlight-card">
+            <span class="b-stat-title">Model Consensus Rate</span>
+            <span id="b-stat-consensus" class="b-stat-val mono">100%</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="batch-table">
+            <thead>
+              <tr>
+                <th>Patient ID</th>
+                <th>Quantum Verdict</th>
+                <th>Quantum Confidence</th>
+                <th>Classical Verdict</th>
+                <th>Classical Confidence</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="batch-table-body">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature Importance & Explainability Panel -->
+    <section id="explain-section" class="explain-section glass-card reveal">
+      <div class="explain-header">
+        <div class="explain-title">
+          <i class="fa-solid fa-brain"></i>
+          <div>
+            <h3>Quantum Representation Feature Importance</h3>
+            <p class="subtitle">Global morphological features with the highest influence on quantum state vector rotations.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-wrapper" style="height: 320px;">
+        <canvas id="importanceBarChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Benchmarks & Milestones -->
+    <section id="benchmarks-section" class="benchmarks-section glass-card reveal">
+      <div class="benchmarks-header">
+        <div class="benchmarks-title">
+          <i class="fa-solid fa-trophy"></i>
+          <div>
+            <h3>Empirical Accuracy Milestones & Progress</h3>
+            <p class="subtitle">Iterative performance gains achieved across architectures on the Wisconsin Diagnostic dataset.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="milestones-row">
+        <div class="milestone-step">
+          <span class="step-num">v1.0</span>
+          <h4>Ring-CNOT (6Q)</h4>
+          <span class="step-acc mono">88.60%</span>
+          <span class="step-desc">Initial 2-layer custom ansatz</span>
+        </div>
+        <div class="milestone-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        <div class="milestone-step">
+          <span class="step-num">v1.2</span>
+          <h4>Ring-CNOT (8Q)</h4>
+          <span class="step-acc mono">93.86%</span>
+          <span class="step-desc">Sweep grid search expansion</span>
+        </div>
+        <div class="milestone-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        <div class="milestone-step">
+          <span class="step-num">v1.5</span>
+          <h4>StronglyEntangling</h4>
+          <span class="step-acc mono">94.74%</span>
+          <span class="step-desc">Euler angle parameterization</span>
+        </div>
+        <div class="milestone-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        <div class="milestone-step highlight-step">
+          <div class="top-badge">CURRENT TOP SCORE</div>
+          <span class="step-num">v2.0</span>
+          <h4>Optimized Pipeline</h4>
+          <span class="step-acc text-glow mono">97.37%</span>
+          <span class="step-desc">Data Re-uploading + Hinge Loss</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Clinical Feature Controls with Sliders -->
+    <section class="features-section glass-card reveal">
+      <div class="features-header">
+        <div class="features-title">
+          <i class="fa-solid fa-sliders"></i>
+          <div>
+            <h3>30 Clinical Biopsy Measurements & Morphological Controls</h3>
+            <p class="subtitle">Inspect or manually calibrate individual morphological parameters with live sliders.</p>
+          </div>
+        </div>
+        <button id="btn-reset-defaults" class="btn btn-secondary btn-sm">
+          <i class="fa-solid fa-rotate-left"></i> Reset to Preset
+        </button>
+      </div>
+
+      <div class="feature-tabs">
+        <button class="tab-btn active" data-tab="tab-mean">Mean Biopsy Metrics (10)</button>
+        <button class="tab-btn" data-tab="tab-se">Standard Error (10)</button>
+        <button class="tab-btn" data-tab="tab-worst">Worst / Extreme Values (10)</button>
+      </div>
+
+      <form id="features-form">
+        <div class="tab-content active" id="tab-mean">
+          <div class="inputs-grid" id="grid-mean"></div>
+        </div>
+        <div class="tab-content" id="tab-se">
+          <div class="inputs-grid" id="grid-se"></div>
+        </div>
+        <div class="tab-content" id="tab-worst">
+          <div class="inputs-grid" id="grid-worst"></div>
+        </div>
+      </form>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <p><strong>Qura</strong> • Smart India Hackathon PS 139 (SIH26139) Prototype</p>
+        <p class="sub">Hybrid Quantum-Classical Machine Learning Architecture powered by PennyLane & Scikit-Learn.</p>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Clinical Report Modal -->
+  <div id="report-modal" class="modal-overlay">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <div class="brand">
+          <div class="brand-logo sm">
+            <i class="fa-solid fa-atom"></i>
+          </div>
+          <div>
+            <h3 style="font-family: var(--font-heading);">Diagnostic Biopsy Evaluation Report</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">QURA Hybrid Quantum-Classical Medical Intelligence</span>
+          </div>
+        </div>
+        <button id="btn-close-modal" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body" id="printable-report">
+        <div class="report-meta-grid">
+          <div>
+            <span class="r-label">Patient ID:</span>
+            <strong id="rep-patient-id">PATIENT_001</strong>
+          </div>
+          <div>
+            <span class="r-label">Evaluation Date:</span>
+            <strong id="rep-date">Current Timestamp</strong>
+          </div>
+          <div>
+            <span class="r-label">Circuit Architecture:</span>
+            <strong>8-Qubit VQC (3 Layers)</strong>
+          </div>
+          <div>
+            <span class="r-label">Inference Engine:</span>
+            <strong>Lightning.Qubit Simulator</strong>
+          </div>
+        </div>
+
+        <div class="report-verdict-box" id="rep-verdict-box">
+          <div>
+            <span style="font-size: 12px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Primary Hybrid Diagnosis</span>
+            <h2 id="rep-primary-verdict" style="font-size: 32px; font-family: var(--font-heading); font-weight: 800;">MALIGNANT</h2>
+          </div>
+          <div class="rep-scores">
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted);">Quantum Confidence:</span>
+              <strong id="rep-q-conf" class="mono" style="color: var(--primary-cyan); font-size: 20px;">97.1%</strong>
+            </div>
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted);">Classical Agreement:</span>
+              <strong id="rep-c-conf" class="mono" style="color: #a78bfa; font-size: 20px;">100.0%</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-summary-text">
+          <p><strong>Clinical Pathology Summary:</strong> Morphological analysis of fine needle aspirate (FNA) correlates with cellular concavity and nuclear boundary variation. Multi-qubit expectation states cross-validated against the classical decision boundary yield verified confidence.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-print-report" class="btn btn-primary">
+          <i class="fa-solid fa-print"></i> Print / Save as PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

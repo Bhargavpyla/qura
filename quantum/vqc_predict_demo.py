@@ -6,7 +6,7 @@ For your UI teammate: import `predict_both(raw_features)` where raw_features
 is a list/array of the 30 original Breast Cancer Wisconsin feature values,
 in the same order as sklearn's load_breast_cancer().feature_names.
 
-Run this file directly to see a demo prediction on a real test sample.
+Run this file directly to see a demo prediction on real test samples.
 """
 import os
 import pennylane as qml
@@ -25,29 +25,43 @@ scaler = joblib.load(os.path.join(BASE_DIR, "vqc_scaler.joblib"))
 pca = joblib.load(os.path.join(BASE_DIR, "vqc_pca.joblib"))
 angle_scaler = joblib.load(os.path.join(BASE_DIR, "vqc_angle_scaler.joblib"))
 classical_model = joblib.load(os.path.join(BASE_DIR, "quantum_domain_classical_baseline.joblib"))
-vqc_weights = np.array(onp.load(os.path.join(BASE_DIR, "vqc_weights.npy")), requires_grad=False)
 
-dev = qml.device("default.qubit", wires=N_QUBITS)
+# Load quantum model parameters (supports .npz with full multi-qubit weights or fallback .npy)
+weights_npz_path = os.path.join(BASE_DIR, "vqc_weights.npz")
+if os.path.exists(weights_npz_path):
+    data_weights = onp.load(weights_npz_path)
+    layer_weights = np.array(data_weights["layer_weights"], requires_grad=False)
+    out_weights = np.array(data_weights["out_weights"], requires_grad=False)
+    bias = float(data_weights["bias"])
+else:
+    layer_weights = np.array(onp.load(os.path.join(BASE_DIR, "vqc_weights.npy")), requires_grad=False)
+    out_weights = np.array(np.ones(N_QUBITS) / N_QUBITS, requires_grad=False)
+    bias = 0.0
 
-def encode(features):
-    for i in range(N_QUBITS):
-        qml.RY(features[i], wires=i)
+try:
+    dev = qml.device("lightning.qubit", wires=N_QUBITS)
+except Exception:
+    dev = qml.device("default.qubit", wires=N_QUBITS)
+
 
 @qml.qnode(dev)
 def circuit(weights, features):
-    encode(features)
-    qml.StronglyEntanglingLayers(weights, wires=range(N_QUBITS))
-    return qml.expval(qml.PauliZ(0))
+    for layer_idx in range(N_LAYERS):
+        for i in range(N_QUBITS):
+            qml.RY(features[i], wires=i)
+        w = weights[layer_idx: layer_idx + 1]
+        qml.StronglyEntanglingLayers(w, wires=range(N_QUBITS))
+    return [qml.expval(qml.PauliZ(i)) for i in range(N_QUBITS)]
 
 
 def predict_classical(raw_features):
     """raw_features: array-like of 30 values (original feature scale)."""
     X = onp.array(raw_features).reshape(1, -1)
     X_scaled = scaler.transform(X)
-    pred = classical_model.predict(X_scaled)[0]        # 1 = malignant(0)->relabeled, careful see note
+    pred = classical_model.predict(X_scaled)[0]
     proba = classical_model.predict_proba(X_scaled)[0]
     label = "Benign" if pred == 1 else "Malignant"
-    confidence = max(proba)
+    confidence = float(max(proba))
     return label, confidence
 
 
@@ -57,9 +71,13 @@ def predict_vqc(raw_features):
     X_scaled = scaler.transform(X)
     X_reduced = pca.transform(X_scaled)
     X_angles = angle_scaler.transform(X_reduced)[0]
-    score = float(circuit(vqc_weights, X_angles))       # in [-1, 1]
-    label = "Benign" if score > 0 else "Malignant"
-    confidence = (abs(score) + 1) / 2                    # rough confidence mapping to [0.5, 1]
+
+    expectations = np.array(circuit(layer_weights, X_angles))
+    score = float(np.dot(out_weights, expectations) + bias)
+
+    label = "Benign" if score >= 0 else "Malignant"
+    # Sigmoidal calibrated confidence
+    confidence = float(1.0 / (1.0 + onp.exp(-abs(score))))
     return label, confidence, score
 
 
@@ -74,16 +92,14 @@ def predict_both(raw_features):
 
 
 if __name__ == "__main__":
-    # Demo: grab a couple of real samples from the dataset and predict
     data = load_breast_cancer()
-    print("NOTE: sklearn labels 0=malignant, 1=benign in the raw target,")
-    print("      but predict_classical relabels internally -- trust the printed label.\n")
+    print("Testing pre-trained models on real patient samples...\n")
 
     for idx in [0, 1, 20, 50]:
         raw_features = data.data[idx]
         true_label = "Benign" if data.target[idx] == 1 else "Malignant"
         result = predict_both(raw_features)
-        print(f"Sample #{idx} (true label: {true_label})")
-        print(f"  Classical -> {result['classical']['label']} (confidence: {result['classical']['confidence']})")
-        print(f"  Quantum   -> {result['quantum']['label']} (confidence: {result['quantum']['confidence']}, raw score: {result['quantum']['raw_score']})")
+        print(f"Sample #{idx} (Ground Truth: {true_label})")
+        print(f"  Classical -> {result['classical']['label']} (Confidence: {result['classical']['confidence']*100:.1f}%)")
+        print(f"  Quantum   -> {result['quantum']['label']} (Confidence: {result['quantum']['confidence']*100:.1f}%, Score: {result['quantum']['raw_score']})")
         print()

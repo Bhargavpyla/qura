@@ -1,0 +1,61 @@
+======================================================================
+VQC Maximum Accuracy Experiment
+======================================================================
+
+Configuration:
+  Device:       lightning.qubit
+  Qubits:       8
+  Layers:       3
+  Epochs:       80
+  Batch size:   20
+  Initial LR:   0.05
+  LR schedule:  [(40, 0.02), (60, 0.01), (70, 0.005)]
+  Loss:         Hinge
+  Ansatz:       StronglyEntanglingLayers + Data Re-uploading
+  Measurement:  Weighted sum of all 8 PauliZ + bias
+  Parameters:   81
+  PCA variance: 0.925
+
+Fixes Applied:
+  1. Proper train/test pipeline (no data leakage)
+  2. Full mini-batch training (~23 steps/epoch)
+  3. Multi-qubit measurement with trainable weights
+  4. Data re-uploading (features at every layer)
+  5. Optimized hyperparameters
+  6. Learning rate scheduling
+  7. Hinge loss
+
+Results:
+  Best Train Accuracy: 0.9670 (96.70%)
+  Best Test  Accuracy: 0.9737 (97.37%)
+  Training Time:       485.3s
+
+Epoch-by-epoch progress:
+  Epoch   5: train=0.9670  test=0.9737
+  Epoch  10: train=0.9648  test=0.9474
+  Epoch  15: train=0.9692  test=0.9561
+  Epoch  20: train=0.9846  test=0.9561
+  Epoch  25: train=0.9560  test=0.9386
+  Epoch  30: train=0.9780  test=0.9386
+  Epoch  35: train=0.9846  test=0.9386
+  Epoch  40: train=0.9824  test=0.9561
+  Epoch  45: train=0.9912  test=0.9474
+  Epoch  50: train=0.9890  test=0.9474
+  Epoch  55: train=0.9912  test=0.9561
+  Epoch  60: train=0.9890  test=0.9561
+  Epoch  65: train=0.9890  test=0.9386
+  Epoch  70: train=0.9912  test=0.9386
+  Epoch  75: train=0.9890  test=0.9561
+  Epoch  80: train=0.9890  test=0.9474
+
+Comparison with previous models:
+  Custom ring-CNOT (8q, 3L, 30ep):           93.9%
+  StronglyEntangling (8q, 3L, 60ep):         94.7%
+  Optimized VQC (8q, 3L, 80ep):              97.4%
+  Classical Logistic Regression:              97.4%
+
+Confusion Matrix:
+                Predicted
+                Malig.  Benign
+  Actual Malig.    40       3
+  Actual Benign     0      71

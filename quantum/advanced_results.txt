@@ -1,7 +1,7 @@
 StronglyEntanglingLayers ansatz, 8 qubits, 3 layers, 60 epochs
 Final train acc: 0.901
 Final test acc:  0.947
-Time: 105.6s
+Time: 59.7s
 
 Epoch-by-epoch test accuracy:
   Epoch  10: 0.684
