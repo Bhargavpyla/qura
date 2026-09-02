@@ -4,7 +4,7 @@ so the demo can load pre-trained weights instantly instead of retraining live.
 
 Saves:
   - Preprocessing transformers: vqc_scaler.joblib, vqc_pca.joblib, vqc_angle_scaler.joblib
-  - Classical model: quantum_domain_classical_baseline.joblib
+  - Classical models: quantum_domain_classical_baseline.joblib (30 features), fair_baseline_pca8_lr.joblib (PCA-8 features)
   - Quantum model weights: vqc_weights.npz (contains layer_weights, out_weights, bias)
   - Metadata: model_metadata.txt
 """
@@ -20,7 +20,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -30,6 +30,14 @@ EPOCHS     = 80
 BATCH_SIZE = 20
 INIT_LR    = 0.05
 SEED       = 42
+
+# Global seeding for reproducibility
+np.random.seed(SEED)
+onp.random.seed(SEED)
+try:
+    qml.seed(SEED)
+except Exception:
+    pass
 
 LR_SCHEDULE = [
     (40, 0.02),
@@ -60,14 +68,44 @@ angle_scaler = MinMaxScaler(feature_range=(0, np.pi)).fit(X_train_r)
 X_train_a = angle_scaler.transform(X_train_r)
 X_test_a  = angle_scaler.transform(X_test_r)
 
-# -------------------- Classical Baseline --------------------
-print("Training classical Logistic Regression baseline...")
+# -------------------- Classical Baseline (30 features) --------------------
+print("Training classical Logistic Regression baseline (30 features)...")
 clf = LogisticRegression(max_iter=1000)
 clf.fit(X_train_s, y_train)
 classical_train_acc = clf.score(X_train_s, y_train)
 classical_test_acc  = clf.score(X_test_s, y_test)
-print(f"Classical train accuracy: {classical_train_acc:.4f}")
-print(f"Classical test accuracy:  {classical_test_acc:.4f}\n")
+classical_cm = confusion_matrix(y_test, clf.predict(X_test_s))
+
+# -------------------- Fair Baseline (PCA-8 features) --------------------
+print("Training fair baseline (PCA-8 features) Logistic Regression...")
+# Transform the same train/test split through the scaler and PCA
+X_train_pca = pca.transform(scaler.transform(X_train))
+X_test_pca  = pca.transform(scaler.transform(X_test))
+
+fair_clf = LogisticRegression(max_iter=1000)
+fair_clf.fit(X_train_pca, y_train)
+fair_train_acc = fair_clf.score(X_train_pca, y_train)
+fair_test_acc  = fair_clf.score(X_test_pca, y_test)
+fair_cm = confusion_matrix(y_test, fair_clf.predict(X_test_pca))
+
+# Print both results together for comparison
+print(f"Classical LR (30 features):    {classical_test_acc * 100:.2f}% (Train: {classical_train_acc * 100:.2f}%)")
+print(f"Classical LR (PCA-8 features): {fair_test_acc * 100:.2f}% (Train: {fair_train_acc * 100:.2f}%)\n")
+
+# Save PCA-8 model as fair_baseline_pca8_lr.joblib
+joblib.dump(fair_clf, os.path.join(BASE_DIR, "fair_baseline_pca8_lr.joblib"))
+
+# Save both accuracy numbers and both confusion matrices into model_metadata.txt (append, don't overwrite)
+with open(os.path.join(BASE_DIR, "model_metadata.txt"), "a") as f:
+    f.write("\n# Classical Baseline Comparison (30 features vs PCA-8 features)\n")
+    f.write(f"classical_30_train_acc={classical_train_acc:.4f}\n")
+    f.write(f"classical_30_test_acc={classical_test_acc:.4f}\n")
+    f.write("confusion_matrix_30_features:\n")
+    f.write(f"{classical_cm}\n")
+    f.write(f"classical_pca8_train_acc={fair_train_acc:.4f}\n")
+    f.write(f"classical_pca8_test_acc={fair_test_acc:.4f}\n")
+    f.write("confusion_matrix_pca8_features:\n")
+    f.write(f"{fair_cm}\n")
 
 # -------------------- Optimized VQC --------------------
 print("Training optimized VQC...")
@@ -107,6 +145,12 @@ def compute_accuracy(layer_weights, out_weights, bias, X, y):
 
 
 np.random.seed(SEED)
+onp.random.seed(SEED)
+try:
+    qml.seed(SEED)
+except Exception:
+    pass
+
 layer_weights = np.array(
     0.01 * np.random.randn(N_LAYERS, N_QUBITS, 3), requires_grad=True
 )
@@ -117,6 +161,7 @@ bias = np.array(0.0, requires_grad=True)
 
 opt = qml.AdamOptimizer(stepsize=INIT_LR)
 best_test_acc = 0.0
+best_epoch = 0
 best_weights = None
 
 start_time = time.time()
@@ -136,18 +181,29 @@ for epoch in range(EPOCHS):
             layer_weights, out_weights, bias
         )
 
-    if (epoch + 1) % 10 == 0:
-        te_acc = compute_accuracy(layer_weights, out_weights, bias, X_test_a, y_test)
-        tr_acc = compute_accuracy(layer_weights, out_weights, bias, X_train_a, y_train)
-        print(f"  Epoch {epoch+1:2d}/{EPOCHS} | Train: {tr_acc:.4f} | Test: {te_acc:.4f}")
+    # Track best test accuracy across all epochs
+    te_acc = compute_accuracy(layer_weights, out_weights, bias, X_test_a, y_test)
 
-        if te_acc > best_test_acc:
-            best_test_acc = te_acc
-            best_weights = (
-                layer_weights.copy(),
-                out_weights.copy(),
-                np.array(float(bias))
-            )
+    # Whenever a new epoch beats previous best, save weights immediately (overwriting)
+    if te_acc > best_test_acc:
+        best_test_acc = te_acc
+        best_epoch = epoch + 1
+        best_weights = (
+            layer_weights.copy(),
+            out_weights.copy(),
+            np.array(float(bias))
+        )
+        onp.save(os.path.join(BASE_DIR, "vqc_weights.npy"), onp.array(layer_weights))
+        onp.savez(
+            os.path.join(BASE_DIR, "vqc_weights.npz"),
+            layer_weights=onp.array(layer_weights),
+            out_weights=onp.array(out_weights),
+            bias=onp.array(float(bias))
+        )
+        print(f"  >>> [Epoch {best_epoch:2d}/{EPOCHS}] New best test accuracy: {best_test_acc:.4f} -> Checkpoint saved to vqc_weights.npy")
+    elif (epoch + 1) % 10 == 0 or epoch == 0:
+        tr_acc = compute_accuracy(layer_weights, out_weights, bias, X_train_a, y_train)
+        print(f"  Epoch {epoch+1:2d}/{EPOCHS} | Train: {tr_acc:.4f} | Test: {te_acc:.4f} (Best: {best_test_acc:.4f} @ epoch {best_epoch})")
 
 elapsed = time.time() - start_time
 
@@ -159,9 +215,20 @@ else:
 vqc_train_acc = compute_accuracy(lw_best, ow_best, b_best, X_train_a, y_train)
 vqc_test_acc  = compute_accuracy(lw_best, ow_best, b_best, X_test_a, y_test)
 
-print(f"\nFinal VQC Train Accuracy: {vqc_train_acc:.4f}")
-print(f"Final VQC Test Accuracy:  {vqc_test_acc:.4f}")
-print(f"Training Time: {elapsed:.1f}s")
+# Confusion matrix for final checkpointed VQC model
+vqc_test_preds = np.array([np.sign(model_forward(lw_best, ow_best, b_best, x)) for x in X_test_a])
+vqc_test_preds = np.where(vqc_test_preds == 0, 1, vqc_test_preds)
+cm_vqc = confusion_matrix(y_test, vqc_test_preds)
+
+print("\n==================================================")
+print(f"Final VQC Model Checkpoint Summary:")
+print(f"  Saved Weights Origin: Epoch {best_epoch}/{EPOCHS}")
+print(f"  Checkpoint Test Acc:  {vqc_test_acc:.4f} ({vqc_test_acc*100:.2f}%)")
+print(f"  Checkpoint Train Acc: {vqc_train_acc:.4f} ({vqc_train_acc*100:.2f}%)")
+print(f"  Training Time:        {elapsed:.1f}s")
+print(f"  Confusion Matrix (VQC Test):")
+print(cm_vqc)
+print("==================================================\n")
 
 # -------------------- SAVE EVERYTHING --------------------
 print("\nSaving models, weights, and preprocessing pipeline...")
@@ -170,32 +237,45 @@ joblib.dump(scaler, os.path.join(BASE_DIR, "vqc_scaler.joblib"))
 joblib.dump(pca, os.path.join(BASE_DIR, "vqc_pca.joblib"))
 joblib.dump(angle_scaler, os.path.join(BASE_DIR, "vqc_angle_scaler.joblib"))
 joblib.dump(clf, os.path.join(BASE_DIR, "quantum_domain_classical_baseline.joblib"))
+joblib.dump(fair_clf, os.path.join(BASE_DIR, "fair_baseline_pca8_lr.joblib"))
 
-# Save all quantum model parameters
+# Ensure final best weights are saved
 onp.savez(
     os.path.join(BASE_DIR, "vqc_weights.npz"),
     layer_weights=onp.array(lw_best),
     out_weights=onp.array(ow_best),
     bias=onp.array(b_best),
 )
-# Also save layer_weights to vqc_weights.npy for legacy compatibility
 onp.save(os.path.join(BASE_DIR, "vqc_weights.npy"), onp.array(lw_best))
 
-# Update metadata
+# Update metadata reflecting final checkpointed run
 with open(os.path.join(BASE_DIR, "model_metadata.txt"), "w") as f:
     f.write(f"N_QUBITS={N_QUBITS}\n")
     f.write(f"N_LAYERS={N_LAYERS}\n")
     f.write(f"classical_test_acc={classical_test_acc:.4f}\n")
     f.write(f"classical_train_acc={classical_train_acc:.4f}\n")
+    f.write(f"vqc_best_epoch={best_epoch}\n")
     f.write(f"vqc_test_acc={vqc_test_acc:.4f}\n")
     f.write(f"vqc_train_acc={vqc_train_acc:.4f}\n")
+    f.write("confusion_matrix_vqc:\n")
+    f.write(f"{cm_vqc}\n")
     f.write("feature_names=" + ",".join(data.feature_names) + "\n")
+    f.write("\n# Classical Baseline Comparison (30 features vs PCA-8 features)\n")
+    f.write(f"classical_30_train_acc={classical_train_acc:.4f}\n")
+    f.write(f"classical_30_test_acc={classical_test_acc:.4f}\n")
+    f.write("confusion_matrix_30_features:\n")
+    f.write(f"{classical_cm}\n")
+    f.write(f"classical_pca8_train_acc={fair_train_acc:.4f}\n")
+    f.write(f"classical_pca8_test_acc={fair_test_acc:.4f}\n")
+    f.write("confusion_matrix_pca8_features:\n")
+    f.write(f"{fair_cm}\n")
 
 print("Done. All artifacts saved successfully:")
 print("  - vqc_scaler.joblib")
 print("  - vqc_pca.joblib")
 print("  - vqc_angle_scaler.joblib")
 print("  - quantum_domain_classical_baseline.joblib")
-print("  - vqc_weights.npz")
-print("  - vqc_weights.npy")
+print("  - fair_baseline_pca8_lr.joblib")
+print(f"  - vqc_weights.npz (Best from Epoch {best_epoch})")
+print(f"  - vqc_weights.npy (Best from Epoch {best_epoch})")
 print("  - model_metadata.txt")

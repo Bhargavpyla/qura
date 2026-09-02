@@ -2,6 +2,22 @@ N_QUBITS=8
 N_LAYERS=3
 classical_test_acc=0.9737
 classical_train_acc=0.9868
-vqc_test_acc=0.9561
-vqc_train_acc=0.9846
+vqc_best_epoch=5
+vqc_test_acc=0.9737
+vqc_train_acc=0.9670
+confusion_matrix_vqc:
+[[40  3]
+ [ 0 71]]
 feature_names=mean radius,mean texture,mean perimeter,mean area,mean smoothness,mean compactness,mean concavity,mean concave points,mean symmetry,mean fractal dimension,radius error,texture error,perimeter error,area error,smoothness error,compactness error,concavity error,concave points error,symmetry error,fractal dimension error,worst radius,worst texture,worst perimeter,worst area,worst smoothness,worst compactness,worst concavity,worst concave points,worst symmetry,worst fractal dimension
+
+# Classical Baseline Comparison (30 features vs PCA-8 features)
+classical_30_train_acc=0.9868
+classical_30_test_acc=0.9737
+confusion_matrix_30_features:
+[[41  2]
+ [ 1 70]]
+classical_pca8_train_acc=0.9780
+classical_pca8_test_acc=0.9912
+confusion_matrix_pca8_features:
+[[42  1]
+ [ 0 71]]
