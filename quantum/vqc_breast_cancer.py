@@ -1,3 +1,4 @@
+# NOTE: Historical exploratory run/script — legacy prototype with data leakage in PCA/scaler fitting, superseded by train_and_save_vqc_models.py. Not a valid final result. See model_metadata.txt and README.md for current numbers.
 """
 Hybrid Quantum-Classical VQC for Breast Cancer Detection
 ==========================================================

@@ -23,15 +23,16 @@ pip install -r requirements.txt
 
 ## Quantum Benchmark Results
 
-| Model / Configuration | Features | Test Accuracy | Train Accuracy |
-|---|---|---|---|
-| **Classical Logistic Regression** | 30 (All) | **97.37%** | 98.24% |
-| **VQC (Optimized Pipeline)** | **8 (PCA)** | **97.37%** | **96.70%** |
-| VQC (StronglyEntanglingLayers, 60 epochs) | 8 (PCA) | 94.74% | 90.11% |
-| VQC (Custom ring-CNOT ansatz, 30 epochs) | 8 (PCA) | 93.86% | 90.77% |
-| VQC (6 qubits, 2 layers baseline) | 6 (PCA) | 88.60% | 89.01% |
+| Model / Configuration | Features | Test Accuracy | Train Accuracy | Confusion Matrix (Test) | Notes |
+|---|---|---|---|---|---|
+| **Classical Logistic Regression** | 30 (All) | **97.37%** | **98.68%** | `[[41, 2], [1, 70]]` | Full classical feature baseline |
+| **Classical Logistic Regression (PCA-8, Fair Baseline)** | **8 (PCA)** | **99.12%** | **97.80%** | `[[42, 1], [0, 71]]` | Feature-matched comparison against VQC (both use 8 features) |
+| **VQC (Optimized Pipeline, Best Checkpoint: Epoch 5)** | **8 (PCA)** | **97.37%** | **96.70%** | `[[40, 3], [0, 71]]` | Data re-uploading, 8-qubit readout + bias, Hinge loss |
+| VQC (StronglyEntanglingLayers, 60 epochs) | 8 (PCA) | 94.74% | 90.11% | — | Historical intermediate experiment (MSE loss, single readout) |
+| VQC (Custom ring-CNOT ansatz, 30 epochs) | 8 (PCA) | 93.86% | 90.77% | — | Historical prototype ansatz |
+| VQC (6 qubits, 2 layers baseline) | 6 (PCA) | 88.60% | 89.01% | — | Early baseline |
 
-Full experiment logs: `quantum/max_accuracy_results.txt`, `quantum/advanced_results.txt`, `quantum/results.txt`
+Full experiment logs & metadata: `quantum/model_metadata.txt`, `quantum/max_accuracy_results.txt`, `quantum/advanced_results.txt`, `quantum/results.txt`
 
 ### Key Architectural Highlights
 - **Data Re-Uploading**: Features are re-encoded at every variational layer via $R_Y$ rotations for enhanced expressivity.

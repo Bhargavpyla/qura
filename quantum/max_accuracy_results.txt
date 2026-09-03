@@ -52,7 +52,8 @@ Comparison with previous models:
   Custom ring-CNOT (8q, 3L, 30ep):           93.9%
   StronglyEntangling (8q, 3L, 60ep):         94.7%
   Optimized VQC (8q, 3L, 80ep):              97.4%
-  Classical Logistic Regression:              97.4%
+  Classical Logistic Regression (30 feat):   97.4%
+  (Note: The PCA-8 fair baseline [99.12% test] is documented separately in model_metadata.txt and README.md)
 
 Confusion Matrix:
                 Predicted

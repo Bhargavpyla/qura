@@ -1,3 +1,5 @@
+# NOTE: Historical exploratory run/script — unseeded split with data leakage in PCA/scaler fitting and single-qubit readout. Not a valid final result. See model_metadata.txt and README.md for current numbers.
+
 StronglyEntanglingLayers ansatz, 8 qubits, 3 layers, 60 epochs
 Final train acc: 0.901
 Final test acc:  0.947

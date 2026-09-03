@@ -1,3 +1,4 @@
+# NOTE: Historical exploratory run/script — unseeded split with data leakage in PCA/scaler fitting and single-qubit readout. Not a valid final result. See model_metadata.txt and README.md for current numbers.
 """
 Advanced experiment: try PennyLane's built-in StronglyEntanglingLayers
 template (a more sophisticated ansatz than our hand-rolled ring-CNOT one),

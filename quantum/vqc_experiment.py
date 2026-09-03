@@ -1,3 +1,4 @@
+# NOTE: Historical exploratory run/script — unseeded split with data leakage in PCA/scaler fitting and MSE loss. Not a valid final result. See model_metadata.txt and README.md for current numbers.
 """
 Experiment sweep: different qubit counts / layer counts for the VQC,
 compared against the classical baseline. Results logged to results.txt

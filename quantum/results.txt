@@ -1,3 +1,5 @@
+# NOTE: Historical exploratory run/script — early parameter sweep with data leakage in PCA/scaler fitting and MSE loss. Not a valid final result. See model_metadata.txt and README.md for current numbers.
+
 Classical Logistic Regression baseline accuracy: 0.974
 
 Qubits  Layers  Train Acc   Test Acc    Time (s)  
