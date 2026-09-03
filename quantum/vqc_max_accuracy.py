@@ -1,3 +1,7 @@
+# NOTE: Experiment/logging script only — does NOT save model weights or 
+# artifacts (no .joblib/.npy/.npz output). Not part of the active 
+# pipeline. See train_and_save_vqc_models.py for the production model, 
+# and model_metadata.txt / README.md for current numbers.
 """
 Maximum-accuracy Variational Quantum Classifier (VQC) on Breast Cancer Wisconsin.
 Practical version: keeps all 7 fixes with a circuit that runs in reasonable time.
@@ -20,6 +24,7 @@ from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -76,7 +81,13 @@ X_test_a  = angle_scaler.transform(X_test_r)
 
 print(f"PCA variance retained: {sum(pca.explained_variance_ratio_):.3f}")
 print(f"Train samples: {len(X_train_a)}, Test samples: {len(X_test_a)}")
-print()
+
+# -- Classical Baseline for comparison (evaluated dynamically) -----------------
+clf = LogisticRegression(max_iter=1000)
+clf.fit(X_train_s, y_train)
+classical_train_acc = clf.score(X_train_s, y_train)
+classical_test_acc  = clf.score(X_test_s, y_test)
+print(f"Classical Logistic Regression (30 features): Test {classical_test_acc*100:.2f}%, Train {classical_train_acc*100:.2f}%\n")
 
 # -- Circuit with data re-uploading (FIX 4) and multi-qubit readout (FIX 3) ---
 
@@ -274,10 +285,10 @@ with open(results_path, "w") as f:
         f.write(f"  Epoch {ep:3d}: train={tr:.4f}  test={te:.4f}\n")
 
     f.write("\nComparison with previous models:\n")
-    f.write("  Custom ring-CNOT (8q, 3L, 30ep):           93.9%\n")
-    f.write("  StronglyEntangling (8q, 3L, 60ep):         94.7%\n")
+    f.write("  Custom ring-CNOT (8q, 3L, 30ep):           93.9% (historical, has data leakage — see vqc_breast_cancer.py)\n")
+    f.write("  StronglyEntangling (8q, 3L, 60ep):         94.7% (historical, has data leakage — see vqc_advanced_experiment.py)\n")
     f.write(f"  Optimized VQC (8q, 3L, 80ep):              {final_test_acc*100:.1f}%\n")
-    f.write("  Classical Logistic Regression:              97.4%\n")
+    f.write(f"  Classical Logistic Regression (30 feat):   {classical_test_acc*100:.1f}%\n")
 
     f.write("\nConfusion Matrix:\n")
     f.write(f"                Predicted\n")
