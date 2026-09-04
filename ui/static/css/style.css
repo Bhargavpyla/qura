@@ -515,13 +515,47 @@ body.dark-theme {
 /* Results Grid */
 .results-grid {
   display: grid;
-  grid-template-columns: 1fr 260px 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   align-items: stretch;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1120px) {
   .results-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+.results-full-width {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  text-align: left;
+}
+.consensus-text-group {
+  flex: 1;
+  margin: 0 24px;
+}
+.consensus-text-group h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  color: #fff;
+}
+.consensus-text-group p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+@media (max-width: 768px) {
+  .results-full-width {
+    flex-direction: column;
+    text-align: center;
+    gap: 14px;
+  }
+  .consensus-text-group {
+    margin: 0;
   }
 }
 
@@ -536,6 +570,10 @@ body.dark-theme {
 .quantum-card {
   border-color: rgba(255, 42, 75, 0.35);
   box-shadow: var(--shadow-glow-red);
+}
+.fair-card {
+  border-color: rgba(52, 211, 153, 0.35);
+  box-shadow: 0 0 24px rgba(52, 211, 153, 0.12);
 }
 .classical-card {
   border-color: rgba(255, 255, 255, 0.22);
@@ -561,6 +599,11 @@ body.dark-theme {
   background: rgba(255, 42, 75, 0.15);
   color: var(--primary-red);
   border: 1px solid rgba(255, 42, 75, 0.4);
+}
+.fair-tag {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
 }
 .classical-tag {
   background: rgba(255, 255, 255, 0.1);
@@ -635,6 +678,10 @@ body.dark-theme {
 .quantum-fill {
   background: linear-gradient(90deg, var(--primary-red), #b91c1c);
   box-shadow: 0 0 16px rgba(255, 42, 75, 0.6);
+}
+.fair-fill {
+  background: linear-gradient(90deg, #34d399, #059669);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.6);
 }
 .classical-fill {
   background: linear-gradient(90deg, #ffffff, #94a3b8);

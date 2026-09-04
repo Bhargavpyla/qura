@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
@@ -20,7 +21,8 @@ from sklearn.metrics import (
 # We fix this by reading without treating the first row as an index
 # and explicitly assigning correct names: 30 features + 1 target.
 
-CSV_PATH = "breast_cancer_Main.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_PATH = os.path.join(BASE_DIR, "breast_cancer_Main.csv")
 
 feature_names = [
     "mean radius", "mean texture", "mean perimeter", "mean area",

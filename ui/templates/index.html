@@ -164,28 +164,51 @@
         </div>
       </div>
 
-      <!-- Consensus Badge -->
-      <div class="consensus-card glass-card" id="consensus-container">
-        <div class="consensus-icon-wrapper">
-          <div class="consensus-pulse-ring"></div>
-          <div class="consensus-icon" id="consensus-icon">
-            <i class="fa-solid fa-check-double"></i>
+      <!-- Fair Baseline (PCA-8) Card -->
+      <div class="result-card fair-card glass-card" id="fair-card-container">
+        <div class="card-top-row">
+          <div class="card-badge fair-tag">
+            <i class="fa-solid fa-scale-balanced"></i> Fair Baseline (PCA-8)
+          </div>
+          <span class="engine-indicator">Feature-Matched • 99.12% Acc</span>
+        </div>
+
+        <div class="verdict-body">
+          <span class="verdict-label-sub">Predicted Pathology</span>
+          <h3 id="fair-verdict" class="verdict-label malignant">Malignant</h3>
+        </div>
+
+        <div class="confidence-gauge">
+          <div class="gauge-label-row">
+            <span>Diagnostic Confidence</span>
+            <span id="fair-confidence-val" class="gauge-percentage mono">99.2%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="fair-progress-bar" class="progress-bar-fill fair-fill" style="width: 99.2%;">
+              <span class="bar-shine"></span>
+            </div>
           </div>
         </div>
-        <h4>Cross-Model Agreement</h4>
-        <p id="consensus-desc">Full Consensus: Quantum and Classical models agree with zero divergence.</p>
-        <div class="consensus-tag-wrapper">
-          <span class="consensus-tag" id="consensus-status">100% Agreement</span>
+
+        <div class="metrics-subgrid">
+          <div class="metric-box">
+            <span class="metric-name">P(Malignant)</span>
+            <span id="fair-prob-malig" class="metric-val mono">99.2%</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-name">P(Benign)</span>
+            <span id="fair-prob-benign" class="metric-val mono">0.8%</span>
+          </div>
         </div>
       </div>
 
-      <!-- Classical Card -->
+      <!-- Full Classical Baseline (30 Features) Card -->
       <div class="result-card classical-card glass-card" id="classical-card-container">
         <div class="card-top-row">
           <div class="card-badge classical-tag">
-            <i class="fa-solid fa-microchip"></i> Classical Baseline
+            <i class="fa-solid fa-microchip"></i> Full Baseline (30-F)
           </div>
-          <span class="engine-indicator">Logistic Regression (30 Features)</span>
+          <span class="engine-indicator">All 30 Features • 97.37% Acc</span>
         </div>
 
         <div class="verdict-body">
@@ -214,6 +237,23 @@
             <span class="metric-name">P(Benign)</span>
             <span id="classical-prob-benign" class="metric-val mono">0.0%</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Consensus Badge Card (Spans bottom or bridges models) -->
+      <div class="consensus-card glass-card results-full-width" id="consensus-container">
+        <div class="consensus-icon-wrapper">
+          <div class="consensus-pulse-ring"></div>
+          <div class="consensus-icon" id="consensus-icon">
+            <i class="fa-solid fa-check-double"></i>
+          </div>
+        </div>
+        <div class="consensus-text-group">
+          <h4>Tri-Engine Clinical Agreement</h4>
+          <p id="consensus-desc">Full Consensus: Quantum and Classical models agree with zero divergence.</p>
+        </div>
+        <div class="consensus-tag-wrapper">
+          <span class="consensus-tag" id="consensus-status">Unanimous Consensus (3/3)</span>
         </div>
       </div>
     </section>
@@ -352,8 +392,12 @@
             <span id="b-stat-benign" class="b-stat-val mono">0</span>
           </div>
           <div class="batch-stat-card highlight-card">
-            <span class="b-stat-title">Model Consensus Rate</span>
+            <span class="b-stat-title">Unanimous Consensus (3/3)</span>
             <span id="b-stat-consensus" class="b-stat-val mono">100%</span>
+          </div>
+          <div class="batch-stat-card">
+            <span class="b-stat-title">Quantum-Fair Agreement</span>
+            <span id="b-stat-qf-consensus" class="b-stat-val mono">100%</span>
           </div>
         </div>
 
@@ -363,10 +407,10 @@
               <tr>
                 <th>Patient ID</th>
                 <th>Quantum Verdict</th>
-                <th>Quantum Confidence</th>
-                <th>Classical Verdict</th>
-                <th>Classical Confidence</th>
-                <th>Status</th>
+                <th>Quantum Conf.</th>
+                <th>Fair Baseline (PCA-8)</th>
+                <th>Full Baseline (30-F)</th>
+                <th>Tri-Consensus</th>
               </tr>
             </thead>
             <tbody id="batch-table-body">
@@ -524,12 +568,16 @@
           </div>
           <div class="rep-scores">
             <div>
-              <span style="font-size: 11px; color: var(--text-muted);">Quantum Confidence:</span>
-              <strong id="rep-q-conf" class="mono" style="color: var(--primary-cyan); font-size: 20px;">97.1%</strong>
+              <span style="font-size: 11px; color: var(--text-muted);">Quantum VQC:</span>
+              <strong id="rep-q-conf" class="mono" style="color: var(--primary-red); font-size: 18px;">97.1%</strong>
             </div>
             <div>
-              <span style="font-size: 11px; color: var(--text-muted);">Classical Agreement:</span>
-              <strong id="rep-c-conf" class="mono" style="color: #a78bfa; font-size: 20px;">100.0%</strong>
+              <span style="font-size: 11px; color: var(--text-muted);">Fair Baseline (PCA-8):</span>
+              <strong id="rep-fair-conf" class="mono" style="color: #34d399; font-size: 18px;">99.2%</strong>
+            </div>
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted);">Full Baseline (30-F):</span>
+              <strong id="rep-c-conf" class="mono" style="color: #ffffff; font-size: 18px;">100.0%</strong>
             </div>
           </div>
         </div>

@@ -7,9 +7,15 @@ Install if needed:
     pip install pandas numpy scikit-learn matplotlib
 """
 
+import os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, cross_val_score
@@ -19,7 +25,8 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 # ---------------------------------------------------------
 # 1. Load data (fixing the 31-columns-vs-30-headers issue)
 # ---------------------------------------------------------
-CSV_PATH = "breast_cancer_Main.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_PATH = os.path.join(BASE_DIR, "breast_cancer_Main.csv")
 
 feature_names = [
     "mean radius", "mean texture", "mean perimeter", "mean area",
@@ -63,32 +70,37 @@ print(f"Total variance explained by {N_COMPONENTS} components: {explained.sum():
 # ---------------------------------------------------------
 # 4. Scree plot (variance explained per component)
 # ---------------------------------------------------------
-plt.figure(figsize=(7, 4))
-plt.bar(range(1, N_COMPONENTS + 1), explained, alpha=0.7, label="Individual")
-plt.plot(range(1, N_COMPONENTS + 1), np.cumsum(explained), marker="o",
-          color="red", label="Cumulative")
-plt.xlabel("Principal Component")
-plt.ylabel("Explained Variance Ratio")
-plt.title("PCA (8 components) - Explained Variance")
-plt.legend()
-plt.tight_layout()
-plt.savefig("pca8_scree_plot.png", dpi=150)
-print("\nSaved scree plot to pca8_scree_plot.png")
+if HAS_MATPLOTLIB:
+    plt.figure(figsize=(7, 4))
+    plt.bar(range(1, N_COMPONENTS + 1), explained, alpha=0.7, label="Individual")
+    plt.plot(range(1, N_COMPONENTS + 1), np.cumsum(explained), marker="o",
+              color="red", label="Cumulative")
+    plt.xlabel("Principal Component")
+    plt.ylabel("Explained Variance Ratio")
+    plt.title("PCA (8 components) - Explained Variance")
+    plt.legend()
+    plt.tight_layout()
+    scree_path = os.path.join(BASE_DIR, "pca8_scree_plot.png")
+    plt.savefig(scree_path, dpi=150)
+    print(f"\nSaved scree plot to {scree_path}")
 
-# ---------------------------------------------------------
-# 5. 2D visualization using PC1 vs PC2 (colored by class)
-# ---------------------------------------------------------
-plt.figure(figsize=(7, 5))
-for label, name, color in [(0, "malignant", "red"), (1, "benign", "green")]:
-    mask = y == label
-    plt.scatter(X_pca[mask, 0], X_pca[mask, 1], label=name, alpha=0.6, c=color)
-plt.xlabel("PC1")
-plt.ylabel("PC2")
-plt.title("PCA - First 2 Components")
-plt.legend()
-plt.tight_layout()
-plt.savefig("pca8_pc1_pc2.png", dpi=150)
-print("Saved 2D PCA plot to pca8_pc1_pc2.png")
+    # ---------------------------------------------------------
+    # 5. 2D visualization using PC1 vs PC2 (colored by class)
+    # ---------------------------------------------------------
+    plt.figure(figsize=(7, 5))
+    for label, name, color in [(0, "malignant", "red"), (1, "benign", "green")]:
+        mask = y == label
+        plt.scatter(X_pca[mask, 0], X_pca[mask, 1], label=name, alpha=0.6, c=color)
+    plt.xlabel("PC1")
+    plt.ylabel("PC2")
+    plt.title("PCA - First 2 Components")
+    plt.legend()
+    plt.tight_layout()
+    scatter_path = os.path.join(BASE_DIR, "pca8_pc1_pc2.png")
+    plt.savefig(scatter_path, dpi=150)
+    print(f"Saved 2D PCA plot to {scatter_path}")
+else:
+    print("\n[Notice] matplotlib not installed; skipping plot generation.")
 
 # ---------------------------------------------------------
 # 6. Train a classifier on the 8 PCA components

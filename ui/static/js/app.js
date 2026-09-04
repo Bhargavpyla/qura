@@ -510,6 +510,10 @@ function renderBatchResults(data) {
   document.getElementById("b-stat-malig").innerText = data.malignant_count;
   document.getElementById("b-stat-benign").innerText = data.benign_count;
   document.getElementById("b-stat-consensus").innerText = `${data.consensus_rate}%`;
+  const qfEl = document.getElementById("b-stat-qf-consensus");
+  if (qfEl && data.quantum_fair_consensus_rate !== undefined) {
+    qfEl.innerText = `${data.quantum_fair_consensus_rate}%`;
+  }
 
   const tbody = document.getElementById("batch-table-body");
   tbody.innerHTML = "";
@@ -517,16 +521,18 @@ function renderBatchResults(data) {
   data.results.forEach(item => {
     const tr = document.createElement("tr");
     const qClass = item.quantum.label.toLowerCase();
+    const fairLabel = item.fair_classical ? item.fair_classical.label : "—";
+    const fairConf = item.fair_classical ? `${item.fair_classical.confidence}%` : "—";
 
     tr.innerHTML = `
       <td><strong>${item.patient_id}</strong></td>
       <td><span class="chip-status-dot" style="display:inline-block; margin-right:6px; background:${qClass === 'malignant' ? '#ff2a4b' : '#ffffff'};"></span>${item.quantum.label}</td>
       <td class="mono">${item.quantum.confidence}%</td>
-      <td>${item.classical.label}</td>
-      <td class="mono">${item.classical.confidence}%</td>
+      <td>${fairLabel} <span class="mono" style="font-size:11px; color:#a1a1aa;">(${fairConf})</span></td>
+      <td>${item.classical.label} <span class="mono" style="font-size:11px; color:#a1a1aa;">(${item.classical.confidence}%)</span></td>
       <td>
-        <span class="consensus-tag" style="padding: 2px 8px; font-size: 11px; ${item.consensus ? '' : 'color:#f59e0b; border-color:rgba(245,158,11,0.4);'}">
-          ${item.consensus ? 'Agreed' : 'Divergent'}
+        <span class="consensus-tag" style="padding: 2px 8px; font-size: 11px; ${item.consensus ? '' : (item.quantum_fair_agreement ? 'color:#34d399; border-color:rgba(52,211,153,0.4);' : 'color:#f59e0b; border-color:rgba(245,158,11,0.4);')}">
+          ${item.consensus ? 'Unanimous' : (item.quantum_fair_agreement ? 'Feature-Matched' : 'Divergent')}
         </span>
       </td>
     `;
@@ -734,9 +740,9 @@ async function runDiagnosis(silent = false) {
 }
 
 function updateUIWithResults(res) {
-  const { quantum, classical, consensus } = res;
+  const { quantum, classical, fair_classical, consensus, consensus_status, consensus_desc, quantum_fair_agreement } = res;
 
-  // Quantum UI Elements
+  // 1. Quantum UI Elements
   const qVerdict = document.getElementById("quantum-verdict");
   qVerdict.innerText = quantum.label;
   qVerdict.className = `verdict-label ${quantum.label.toLowerCase()}`;
@@ -746,7 +752,24 @@ function updateUIWithResults(res) {
   document.getElementById("quantum-raw-score").innerText = quantum.raw_score.toFixed(3);
   document.getElementById("quantum-latency").innerText = `${quantum.latency_ms} ms`;
 
-  // Classical UI Elements
+  // 2. Fair Baseline (PCA-8) UI Elements
+  if (fair_classical) {
+    const fairVerdict = document.getElementById("fair-verdict");
+    if (fairVerdict) {
+      fairVerdict.innerText = fair_classical.label;
+      fairVerdict.className = `verdict-label ${fair_classical.label.toLowerCase()}`;
+    }
+
+    animateNumber("fair-confidence-val", 50.0, fair_classical.confidence, 600, "%");
+    const fairBar = document.getElementById("fair-progress-bar");
+    if (fairBar) fairBar.style.width = `${fair_classical.confidence}%`;
+    const fairProbMalig = document.getElementById("fair-prob-malig");
+    if (fairProbMalig) fairProbMalig.innerText = `${fair_classical.probability_malignant}%`;
+    const fairProbBenign = document.getElementById("fair-prob-benign");
+    if (fairProbBenign) fairProbBenign.innerText = `${fair_classical.probability_benign}%`;
+  }
+
+  // 3. Full Classical (30 Features) UI Elements
   const cVerdict = document.getElementById("classical-verdict");
   cVerdict.innerText = classical.label;
   cVerdict.className = `verdict-label ${classical.label.toLowerCase()}`;
@@ -756,7 +779,7 @@ function updateUIWithResults(res) {
   document.getElementById("classical-prob-malig").innerText = `${classical.probability_malignant}%`;
   document.getElementById("classical-prob-benign").innerText = `${classical.probability_benign}%`;
 
-  // Consensus Status
+  // 4. Tri-Engine Consensus Status
   const iconEl = document.getElementById("consensus-icon");
   const descEl = document.getElementById("consensus-desc");
   const statusEl = document.getElementById("consensus-status");
@@ -765,16 +788,24 @@ function updateUIWithResults(res) {
     iconEl.innerHTML = `<i class="fa-solid fa-check-double"></i>`;
     iconEl.style.background = "rgba(255, 42, 75, 0.18)";
     iconEl.style.color = "#ff2a4b";
-    descEl.innerText = `Full Consensus: Both models agree on ${quantum.label} pathology.`;
-    statusEl.innerText = "100% Agreement";
+    descEl.innerText = consensus_desc || `Unanimous Consensus: All 3 models agree on ${quantum.label} pathology.`;
+    statusEl.innerText = consensus_status || "Unanimous Consensus (3/3)";
     statusEl.style.borderColor = "rgba(255, 42, 75, 0.45)";
     statusEl.style.color = "#ff2a4b";
+  } else if (quantum_fair_agreement) {
+    iconEl.innerHTML = `<i class="fa-solid fa-scale-balanced"></i>`;
+    iconEl.style.background = "rgba(52, 211, 153, 0.18)";
+    iconEl.style.color = "#34d399";
+    descEl.innerText = consensus_desc || `Feature-Matched Consensus: Quantum VQC and Fair PCA-8 agree on ${quantum.label}.`;
+    statusEl.innerText = consensus_status || "Feature-Matched (2/3)";
+    statusEl.style.borderColor = "rgba(52, 211, 153, 0.45)";
+    statusEl.style.color = "#34d399";
   } else {
     iconEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
     iconEl.style.background = "rgba(245, 158, 11, 0.18)";
     iconEl.style.color = "#f59e0b";
-    descEl.innerText = `Divergence: Quantum predicts ${quantum.label}, Classical predicts ${classical.label}.`;
-    statusEl.innerText = "Model Divergence";
+    descEl.innerText = consensus_desc || `Model Divergence across predictors.`;
+    statusEl.innerText = consensus_status || "Model Divergence";
     statusEl.style.borderColor = "rgba(245, 158, 11, 0.45)";
     statusEl.style.color = "#f59e0b";
   }
@@ -808,7 +839,7 @@ function updateUIWithResults(res) {
 // -------------------- Modal Report Generator --------------------
 function populateModalReport() {
   if (!lastPredictionResult) return;
-  const { quantum, classical } = lastPredictionResult;
+  const { quantum, classical, fair_classical } = lastPredictionResult;
 
   const currentSampleName = presetSamples[activeSampleKey]?.name || "Custom Biopsy Evaluation";
   document.getElementById("rep-patient-id").innerText = currentSampleName;
@@ -819,5 +850,9 @@ function populateModalReport() {
   vLabel.style.color = quantum.label === "Malignant" ? "#ff2a4b" : "#ffffff";
 
   document.getElementById("rep-q-conf").innerText = `${quantum.confidence}%`;
+  const fairRep = document.getElementById("rep-fair-conf");
+  if (fairRep && fair_classical) {
+    fairRep.innerText = `${fair_classical.confidence}%`;
+  }
   document.getElementById("rep-c-conf").innerText = `${classical.confidence}%`;
 }

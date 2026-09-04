@@ -9,63 +9,35 @@ import sys
 import time
 import io
 import csv
-import joblib
-import pennylane as qml
-from pennylane import numpy as np
 import numpy as onp
 from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
 from sklearn.datasets import load_breast_cancer
 
-# Ensure quantum package can be loaded
+# Ensure quantum package can be loaded reliably from any working directory
 UI_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.abspath(os.path.join(UI_DIR, ".."))
 QUANTUM_DIR = os.path.join(PROJECT_DIR, "quantum")
-sys.path.append(QUANTUM_DIR)
+if QUANTUM_DIR not in sys.path:
+    sys.path.insert(0, QUANTUM_DIR)
 
-app = Flask(__name__, template_folder=os.path.join(UI_DIR, "templates"), static_folder=os.path.join(UI_DIR, "static"))
+from vqc_predict_demo import (
+    predict_all,
+    pca,
+    N_QUBITS,
+    N_LAYERS,
+)
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(UI_DIR, "templates"),
+    static_folder=os.path.join(UI_DIR, "static"),
+)
 CORS(app)
 
-# -------------------- Load Dataset Metadata & Models --------------------
+# -------------------- Load Dataset Metadata & Presets --------------------
 raw_dataset = load_breast_cancer()
 FEATURE_NAMES = list(raw_dataset.feature_names)
-
-N_QUBITS = 8
-N_LAYERS = 3
-
-print("Loading saved preprocessing transformers and model weights...")
-scaler = joblib.load(os.path.join(QUANTUM_DIR, "vqc_scaler.joblib"))
-pca = joblib.load(os.path.join(QUANTUM_DIR, "vqc_pca.joblib"))
-angle_scaler = joblib.load(os.path.join(QUANTUM_DIR, "vqc_angle_scaler.joblib"))
-classical_model = joblib.load(os.path.join(QUANTUM_DIR, "quantum_domain_classical_baseline.joblib"))
-
-# Load quantum model parameters
-weights_npz = os.path.join(QUANTUM_DIR, "vqc_weights.npz")
-if os.path.exists(weights_npz):
-    npz_data = onp.load(weights_npz)
-    layer_weights = np.array(npz_data["layer_weights"], requires_grad=False)
-    out_weights = np.array(npz_data["out_weights"], requires_grad=False)
-    bias = float(npz_data["bias"])
-else:
-    layer_weights = np.array(onp.load(os.path.join(QUANTUM_DIR, "vqc_weights.npy")), requires_grad=False)
-    out_weights = np.array(np.ones(N_QUBITS) / N_QUBITS, requires_grad=False)
-    bias = 0.0
-
-try:
-    dev = qml.device("lightning.qubit", wires=N_QUBITS)
-except Exception:
-    dev = qml.device("default.qubit", wires=N_QUBITS)
-
-
-@qml.qnode(dev)
-def circuit(weights, features):
-    for layer_idx in range(N_LAYERS):
-        for i in range(N_QUBITS):
-            qml.RY(features[i], wires=i)
-        w = weights[layer_idx: layer_idx + 1]
-        qml.StronglyEntanglingLayers(w, wires=range(N_QUBITS))
-    return [qml.expval(qml.PauliZ(i)) for i in range(N_QUBITS)]
-
 
 # Pre-calculate sample presets for quick UI demonstration
 PRESET_SAMPLES = {}
@@ -88,50 +60,8 @@ for key, meta in preset_indices.items():
 
 
 def single_prediction(raw_features_list):
-    """Utility for running combined quantum + classical inference on a 30-feature vector."""
-    start_time = time.time()
-    X_raw = onp.array(raw_features_list, dtype=float).reshape(1, -1)
-    X_scaled = scaler.transform(X_raw)
-    X_pca = pca.transform(X_scaled)
-    X_angles = angle_scaler.transform(X_pca)[0]
-
-    # Classical
-    c_pred_raw = classical_model.predict(X_scaled)[0]
-    c_proba = classical_model.predict_proba(X_scaled)[0]
-    c_label = "Benign" if c_pred_raw == 1 else "Malignant"
-    c_conf = float(max(c_proba))
-
-    # Quantum
-    q_start = time.time()
-    expectations = np.array(circuit(layer_weights, X_angles))
-    q_score = float(np.dot(out_weights, expectations) + bias)
-    q_label = "Benign" if q_score >= 0 else "Malignant"
-    q_conf = float(1.0 / (1.0 + onp.exp(-abs(q_score))))
-    q_time_ms = round((time.time() - q_start) * 1000, 2)
-    total_time_ms = round((time.time() - start_time) * 1000, 2)
-
-    consensus = (c_label == q_label)
-
-    return {
-        "consensus": consensus,
-        "primary_label": q_label,
-        "quantum": {
-            "label": q_label,
-            "confidence": round(q_conf * 100, 2),
-            "raw_score": round(q_score, 4),
-            "latency_ms": q_time_ms,
-            "qubit_expectations": [round(float(e), 4) for e in expectations],
-            "pca_components": [round(float(p), 4) for p in X_pca[0]],
-            "quantum_angles_rad": [round(float(a), 4) for a in X_angles],
-        },
-        "classical": {
-            "label": c_label,
-            "confidence": round(c_conf * 100, 2),
-            "probability_malignant": round(float(c_proba[0] if classical_model.classes_[0] == -1 else c_proba[1]) * 100, 2),
-            "probability_benign": round(float(c_proba[1] if classical_model.classes_[1] == 1 else c_proba[0]) * 100, 2),
-        },
-        "total_latency_ms": total_time_ms,
-    }
+    """Utility for running combined quantum + fair-classical + full-classical inference."""
+    return predict_all(raw_features_list)
 
 
 # -------------------- Routes --------------------
@@ -142,17 +72,56 @@ def index():
 
 @app.route("/api/metadata", methods=["GET"])
 def get_metadata():
+    metadata_path = os.path.join(QUANTUM_DIR, "model_metadata.txt")
+    accuracies = {
+        "vqc_test_acc": 0.9737,
+        "vqc_train_acc": 0.9670,
+        "classical_test_acc": 0.9737,
+        "classical_train_acc": 0.9868,
+        "classical_pca8_test_acc": 0.9912,
+        "classical_pca8_train_acc": 0.9780,
+    }
+    if os.path.exists(metadata_path):
+        try:
+            with open(metadata_path, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if "=" in line and not line.startswith("#"):
+                        k, v = line.split("=", 1)
+                        try:
+                            accuracies[k.strip()] = float(v.strip())
+                        except ValueError:
+                            pass
+        except Exception:
+            pass
+
     return jsonify({
         "feature_names": FEATURE_NAMES,
         "n_qubits": N_QUBITS,
         "n_layers": N_LAYERS,
-        "accuracy": {
-            "vqc_test_acc": 0.9737,
-            "vqc_train_acc": 0.9670,
-            "classical_test_acc": 0.9737,
-            "classical_train_acc": 0.9868,
-            "classical_pca8_test_acc": 0.9912,
-            "classical_pca8_train_acc": 0.9780,
+        "accuracy": accuracies,
+        "models": {
+            "quantum_vqc": {
+                "name": "Optimized VQC (8Q, 3L)",
+                "features": 8,
+                "feature_type": "PCA-8 Angles [0, π]",
+                "test_acc": accuracies.get("vqc_test_acc", 0.9737),
+                "train_acc": accuracies.get("vqc_train_acc", 0.9670),
+            },
+            "fair_classical": {
+                "name": "Fair Baseline LR (PCA-8)",
+                "features": 8,
+                "feature_type": "PCA-8 Components",
+                "test_acc": accuracies.get("classical_pca8_test_acc", 0.9912),
+                "train_acc": accuracies.get("classical_pca8_train_acc", 0.9780),
+            },
+            "classical_full": {
+                "name": "Full Baseline LR (30-Feat)",
+                "features": 30,
+                "feature_type": "Standardized 30 FNA Features",
+                "test_acc": accuracies.get("classical_test_acc", 0.9737),
+                "train_acc": accuracies.get("classical_train_acc", 0.9868),
+            },
         },
         "history": [
             {"model": "VQC (6q, 2L Custom)", "accuracy": 0.8860},
@@ -178,7 +147,7 @@ def predict():
     if len(features) != 30:
         return jsonify({"error": f"Expected 30 features, received {len(features)}"}), 400
 
-    result = single_prediction(features)
+    result = predict_all(features)
     return jsonify(result)
 
 
@@ -193,12 +162,13 @@ def batch_predict():
     results = []
     malignant_count = 0
     benign_count = 0
-    consensus_count = 0
+    unanimous_count = 0
+    quantum_fair_count = 0
 
     for i, row in enumerate(rows):
         features = row.get("features", [])
         if len(features) == 30:
-            pred = single_prediction(features)
+            pred = predict_all(features)
             patient_id = row.get("id", f"Patient-{i+1:03d}")
             pred["patient_id"] = patient_id
             results.append(pred)
@@ -209,13 +179,17 @@ def batch_predict():
                 benign_count += 1
 
             if pred["consensus"]:
-                consensus_count += 1
+                unanimous_count += 1
+            if pred.get("quantum_fair_agreement", False):
+                quantum_fair_count += 1
 
+    total = len(results)
     return jsonify({
-        "total_cases": len(results),
+        "total_cases": total,
         "malignant_count": malignant_count,
         "benign_count": benign_count,
-        "consensus_rate": round((consensus_count / len(results)) * 100, 2) if results else 0,
+        "consensus_rate": round((unanimous_count / total) * 100, 2) if total else 0,
+        "quantum_fair_consensus_rate": round((quantum_fair_count / total) * 100, 2) if total else 0,
         "results": results,
     })
 
@@ -231,7 +205,7 @@ def sample_csv():
     writer.writerow(header)
 
     sample_indices = [0, 1, 2, 3, 4, 20, 21, 22, 50, 51]
-    for i, idx in enumerate(sample_indices):
+    for idx in sample_indices:
         patient_id = f"PATIENT_{idx+1:03d}"
         row = [patient_id] + list(raw_dataset.data[idx])
         writer.writerow(row)
@@ -247,8 +221,6 @@ def sample_csv():
 @app.route("/api/feature_importance", methods=["GET"])
 def feature_importance():
     """Returns the top contributing features to the quantum representation based on PCA loading magnitudes."""
-    # PCA components shape is (n_components=8, n_features=30)
-    # Total importance across top 8 components
     loadings = onp.abs(pca.components_).mean(axis=0)
     top_indices = onp.argsort(loadings)[::-1]
     
@@ -266,3 +238,4 @@ def feature_importance():
 if __name__ == "__main__":
     print(f"Starting Qura Web Server on http://127.0.0.1:5000")
     app.run(host="127.0.0.1", port=5000, debug=True)
+
