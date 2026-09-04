@@ -76,7 +76,7 @@ Raw Patient Biopsy (30 Features)
      [PCA (30 → 8)]
            │
            ▼
-[Angle Scaler (-π, π)] ───► X_angles (8 features)
+[Angle Scaler (0, π)] ───► X_angles (8 features)
                                   │
 ┌─────────────────────────────────┴───────────────────────────────────────┐
 │                        8-QUBIT QUANTUM CIRCUIT                          │
@@ -96,7 +96,7 @@ Raw Patient Biopsy (30 Features)
 ```
 
 ### 1. Continuous Data Re-Uploading
-Instead of a single initial state preparation, features $\mathbf{x} \in [-\pi, \pi]^8$ are re-encoded at **every variational layer** through single-qubit $R_y(\theta)$ rotation gates. This overcomes barren plateaus and dramatically expands the expressivity of the shallow circuit.
+Instead of a single initial state preparation, features $\mathbf{x} \in [0, \pi]^8$ are re-encoded at **every variational layer** through single-qubit $R_y(\theta)$ rotation gates. This overcomes barren plateaus and dramatically expands the expressivity of the shallow circuit.
 
 ### 2. Multi-Qubit Entangled Readout with Trainable Bias
 Prior prototypes measured only a single qubit ($\langle \sigma_z^0 \rangle$). QURA measures the Pauli-Z expectation values across **all 8 qubits** ($\langle \sigma_z^i \rangle, i \in [0, 7]$) and computes a trainable linear combination:
@@ -127,32 +127,54 @@ QURA includes a browser-based clinical cockpit (`qura/ui`) built with Flask, van
 ## 📂 Repository Structure
 
 ```
-qura/
-├── run.py                                     # Master 1-command launcher (Web UI, CLI, Tests)
-├── test_integration.py                        # Automated integration test suite (10/10 verified)
-├── quantum/                                   # Quantum ML Core & Unified Diagnostic Engine
-│   ├── vqc_predict_demo.py                    # Unified modular inference engine (predict_all)
-│   ├── train_and_save_vqc_models.py           # Master training script (leak-free pipeline)
-│   ├── vqc_max_accuracy.py                    # Max-accuracy standalone runner
-│   ├── vqc_weights.npz                        # Trained layer weights, readout weights, & bias
-│   ├── vqc_scaler.joblib                      # Fitted StandardScaler (leak-free)
-│   ├── vqc_pca.joblib                         # Fitted PCA (30 -> 8 components)
-│   ├── vqc_angle_scaler.joblib                # Fitted MinMaxScaler (0 to pi)
-│   ├── quantum_domain_classical_baseline.joblib # 30-feature Classical Logistic Regression (97.37%)
-│   ├── fair_baseline_pca8_lr.joblib           # 8-feature PCA Fair Classical Logistic Regression (99.12%)
-│   ├── model_metadata.txt                     # Source of truth accuracy & configuration logs
-│   ├── max_accuracy_results.txt               # Execution logs for optimized VQC
-│   ├── advanced_results.txt                   # Historical experiment results
-│   └── results.txt                            # Early grid sweep benchmark logs
-├── classical-baseline/                        # Classical ML Exploration & Baseline Modules
-│   ├── BreastCancerClassical/                 # RF, SVM, LR, and PCA-8 pipeline scripts
-│   └── DiabetesComparision/                   # QML vs ML comparison exploration notebook
-├── ui/                                        # Full-Stack Web Application
-│   ├── app.py                                 # Flask Server & REST Endpoints (imports vqc_predict_demo)
-│   ├── templates/index.html                   # Clinical Cockpit HTML5 Template (Tri-Engine Layout)
-│   └── static/
-├── requirements.txt                            # Locked Python dependencies
-└── README.md                                  # Complete project documentation
+quantives/
+├── CONSISTENCY_AUDIT.md                           # Comprehensive benchmark consistency & validation audit
+├── pitch_deck_metrics_audit.md                    # Slide-by-slide metrics verification for hackathon pitch
+├── walkthrough.md                                 # Technical walkthrough & system verification report
+├── README.md                                      # Workspace root navigation & quickstart
+└── qura/                                          # Main QURA Application & Benchmark Core
+    ├── run.py                                     # Master 1-command launcher (Web UI, CLI, Tests)
+    ├── test_integration.py                        # Automated integration test suite (10/10 verified)
+    ├── requirements.txt                            # Locked Python dependencies
+    ├── README.md                                  # Complete project documentation & technical specs
+    ├── quantum/                                   # Quantum ML Core & Unified Diagnostic Engine
+    │   ├── vqc_predict_demo.py                    # Unified modular inference engine (predict_all)
+    │   ├── train_and_save_vqc_models.py           # Master training script (leak-free pipeline)
+    │   ├── vqc_max_accuracy.py                    # Max-accuracy standalone runner
+    │   ├── vqc_advanced_experiment.py             # Layer & ansatz exploration script
+    │   ├── vqc_experiment.py                      # Exploratory qubit/layer grid sweep script
+    │   ├── vqc_breast_cancer.py                   # Initial standalone VQC prototype
+    │   ├── test_circuit.py                        # PennyLane circuit test script
+    │   ├── vqc_weights.npz                        # Trained layer weights, readout weights, & bias
+    │   ├── vqc_weights.npy                        # Fallback raw layer weight array
+    │   ├── vqc_scaler.joblib                      # Fitted StandardScaler (leak-free)
+    │   ├── vqc_pca.joblib                         # Fitted PCA (30 -> 8 components)
+    │   ├── vqc_angle_scaler.joblib                # Fitted MinMaxScaler (0 to pi)
+    │   ├── quantum_domain_classical_baseline.joblib # 30-feature Classical Logistic Regression (97.37%)
+    │   ├── fair_baseline_pca8_lr.joblib           # 8-feature PCA Fair Classical Logistic Regression (99.12%)
+    │   ├── model_metadata.txt                     # Source of truth accuracy & configuration logs
+    │   ├── max_accuracy_results.txt               # Execution logs for optimized VQC
+    │   ├── advanced_results.txt                   # Historical experiment results
+    │   └── results.txt                            # Early grid sweep benchmark logs
+    ├── classical-baseline/                        # Classical ML Exploration & Baseline Modules
+    │   ├── BreastCancerClassical/                 # Wisconsin Diagnostic dataset baselines
+    │   │   ├── Main.py                            # Classical ML models (RF, SVM, LR, KNN on 30 features)
+    │   │   ├── PCA8.py                            # Classical ML on 8 PCA features
+    │   │   ├── addHeaders.py                      # CSV header formatting utility
+    │   │   ├── breast_cancer.csv                  # Raw Wisconsin Diagnostic dataset
+    │   │   └── breast_cancer_Main.csv             # Standardized header dataset
+    │   └── DiabetesComparision/                   # QML exploratory validation
+    │       ├── ComparisionQMLandML.ipynb          # Classical vs QML exploration notebook
+    │       └── diabetes.csv                       # Pima Diabetes exploration dataset
+    └── ui/                                        # Full-Stack Web Application
+        ├── app.py                                 # Flask Server & REST Endpoints (imports vqc_predict_demo)
+        ├── templates/
+        │   └── index.html                         # Clinical Cockpit HTML5 Template (Tri-Engine Layout)
+        └── static/
+            ├── css/
+            │   └── style.css                      # Responsive clinical dark/light theme styling
+            └── js/
+                └── app.js                         # Dynamic UI logic, Bloch visualizer, Chart.js integrations
 ```
 
 ---
