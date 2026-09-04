@@ -10,7 +10,7 @@
 [![Status](https://img.shields.io/badge/Status-Complete%20%26%20Benchmarked-brightgreen?style=for-the-badge)](https://github.com/)
 
 **Ministry Submission — Smart India Hackathon 2026 (Problem Statement 139)**  
-*A clinical-grade, dual-engine diagnostic system combining an 8-Qubit Variational Quantum Classifier (VQC) with a Classical ML baseline on validated patient biopsies.*
+*A clinical-grade, tri-engine diagnostic system combining an 8-Qubit Variational Quantum Classifier (VQC) with both a Fair Feature-Matched Classical Baseline (8 PCA features, 99.12%) and a Full Classical Baseline (30 features, 97.37%) on validated patient biopsies.*
 
 </div>
 
@@ -36,9 +36,10 @@
 **QURA** is an end-to-end medical AI diagnostic prototype that bridges variational quantum computing and classical machine learning to solve early-stage oncology detection. 
 
 Trained and evaluated on the **Wisconsin Breast Cancer Diagnostic Dataset (WDBC)** (569 real biopsy cases, 30 fine-needle aspirate [FNA] morphological features), QURA evaluates every patient sample simultaneously across:
-1. An **8-Qubit Parameterized Quantum Circuit (VQC)** featuring layer-wise data re-uploading, all-to-all entanglement topology, and multi-qubit Pauli-Z expectation readout.
-2. A **Feature-Matched Classical Baseline** (Logistic Regression on 30 raw features and fair 8-PCA features).
-3. A **Dual-Engine Consensus Evaluator** with confidence calibration, quantum state visualization, and clinical explainability rankings.
+1. An **8-Qubit Parameterized Quantum Circuit (VQC)** featuring continuous layer-wise data re-uploading, all-to-all entanglement topology, and multi-qubit Pauli-Z expectation readout.
+2. A **Fair Feature-Matched Classical Baseline** (Logistic Regression on 8 PCA features — **99.12% benchmark test accuracy**).
+3. A **Full Classical Baseline** (Logistic Regression on all 30 raw clinical features — **97.37% benchmark test accuracy**).
+4. A **Tri-Engine Clinical Consensus Evaluator** tracking unanimous (3/3) agreement, feature-matched (2/3) agreement, confidence calibration, quantum state visualization, and clinical explainability rankings.
 
 ---
 
@@ -111,22 +112,14 @@ Trained with margin-based Hinge loss ($L(y, \hat{y}) = \max(0, 1 - y \cdot \hat{
 
 QURA includes a browser-based clinical cockpit (`qura/ui`) built with Flask, vanilla responsive CSS, and Chart.js.
 
-```
-qura/ui/
-├── app.py                     # Flask REST Backend & Inference Server
-├── static/
-│   ├── css/style.css          # Glassmorphism, Dark Mode & Animation System
-│   └── js/app.js              # State Visualizer, Batch Studio, REST Client
-└── templates/
-    └── index.html             # Interactive Clinical Diagnostic Dashboard
-```
-
 ### Dashboard Capabilities:
+- 🩺 **Tri-Engine Diagnostic Verdict Console**: Real-time side-by-side verification across the Quantum VQC Engine, Fair Baseline (PCA-8, 99.12%), and Full Baseline (30-F, 97.37%) with a live consensus badge.
 - 🧪 **Clinical Biopsy Console**: Interactive sliders and precise numeric inputs for all 30 tumor characteristics (mean, standard error, worst).
 - ⚡ **Preset Patient Cases**: Instant 1-click loading of verified real patient biopsies (Patient #001 Malignant, Patient #020 Benign, etc.).
 - 🌐 **Quantum State Visualizer**: Real-time expectation gauge cards, 8-axis Hilbert space radar, and simulated Bloch sphere rotations.
 - 🔬 **Circuit Topology Explorer**: Visual mapping of the 8-qubit variational circuit layers and entangling CNOT channels.
-- 📁 **Batch Studio (CSV Ingestion)**: Upload multi-patient CSV files for high-throughput batch screening with live consensus rate statistics and summary downloads.
+- 📁 **Batch Studio (CSV Ingestion)**: High-throughput screening with live Unanimous Consensus Rate and Quantum-Fair Agreement Rate tracking, summary table, and CSV downloads.
+- 📄 **Clinical Evaluation Report**: Multi-model diagnostic summary with confidences, Hilbert state metrics, and agreement breakdown for clinical audit and PDF printing.
 - 📊 **Feature Impact & Explainability**: Mathematical decomposition of PCA component loadings ranking top morphological drivers (e.g., *worst concave points*, *mean perimeter*).
 
 ---
@@ -135,26 +128,29 @@ qura/ui/
 
 ```
 qura/
-├── quantum/                                    # Quantum ML Core & Training Pipeline
+├── run.py                                     # Master 1-command launcher (Web UI, CLI, Tests)
+├── test_integration.py                        # Automated integration test suite (10/10 verified)
+├── quantum/                                   # Quantum ML Core & Unified Diagnostic Engine
+│   ├── vqc_predict_demo.py                    # Unified modular inference engine (predict_all)
 │   ├── train_and_save_vqc_models.py           # Master training script (leak-free pipeline)
-│   ├── vqc_predict_demo.py                    # Standalone CLI inference interface
 │   ├── vqc_max_accuracy.py                    # Max-accuracy standalone runner
 │   ├── vqc_weights.npz                        # Trained layer weights, readout weights, & bias
 │   ├── vqc_scaler.joblib                      # Fitted StandardScaler (leak-free)
 │   ├── vqc_pca.joblib                         # Fitted PCA (30 -> 8 components)
-│   ├── vqc_angle_scaler.joblib                # Fitted MinMaxScaler (-pi to pi)
-│   ├── quantum_domain_classical_baseline.joblib # 30-feature Classical Logistic Regression
-│   ├── fair_baseline_pca8_lr.joblib           # 8-feature PCA Fair Classical Logistic Regression
+│   ├── vqc_angle_scaler.joblib                # Fitted MinMaxScaler (0 to pi)
+│   ├── quantum_domain_classical_baseline.joblib # 30-feature Classical Logistic Regression (97.37%)
+│   ├── fair_baseline_pca8_lr.joblib           # 8-feature PCA Fair Classical Logistic Regression (99.12%)
 │   ├── model_metadata.txt                     # Source of truth accuracy & configuration logs
 │   ├── max_accuracy_results.txt               # Execution logs for optimized VQC
 │   ├── advanced_results.txt                   # Historical experiment results
 │   └── results.txt                            # Early grid sweep benchmark logs
-├── ui/                                         # Full-Stack Web Application
-│   ├── app.py                                 # Flask Server & REST Endpoints
-│   ├── templates/index.html                   # Clinical Cockpit HTML5 Template
+├── classical-baseline/                        # Classical ML Exploration & Baseline Modules
+│   ├── BreastCancerClassical/                 # RF, SVM, LR, and PCA-8 pipeline scripts
+│   └── DiabetesComparision/                   # QML vs ML comparison exploration notebook
+├── ui/                                        # Full-Stack Web Application
+│   ├── app.py                                 # Flask Server & REST Endpoints (imports vqc_predict_demo)
+│   ├── templates/index.html                   # Clinical Cockpit HTML5 Template (Tri-Engine Layout)
 │   └── static/
-│       ├── css/style.css                      # Modern dark theme & responsive UI styling
-│       └── js/app.js                          # Quantum visualizers & asynchronous client logic
 ├── requirements.txt                            # Locked Python dependencies
 └── README.md                                  # Complete project documentation
 ```
@@ -194,34 +190,57 @@ pip install -r requirements.txt
 ## 📖 Usage & Execution Guide
 
 ### Option A: Launch the Interactive Clinical Web UI (Recommended)
+Launch via the master launcher (or directly via Flask):
 ```bash
-python ui/app.py
+python run.py
+# or: python ui/app.py
 ```
 Open your browser and navigate to: **`http://127.0.0.1:5000`**
 
 ---
 
-### Option B: Run Quick CLI Inference on Real Patients
-Run pre-trained inference on 4 benchmark patient samples without retraining:
+### Option B: Run Quick CLI Tri-Engine Inference on Real Patients
+Run pre-trained tri-engine evaluation on benchmark patient samples without retraining:
 ```bash
-python quantum/vqc_predict_demo.py
+python run.py --cli
+# or: python quantum/vqc_predict_demo.py
 ```
 *Output Preview:*
 ```
-Testing pre-trained models on real patient samples...
+Testing unified diagnostic engine on benchmark patient samples...
 
 Sample #0 (Ground Truth: Malignant)
-  Classical -> Malignant (Confidence: 100.0%)
-  Quantum   -> Malignant (Confidence: 89.2%, Score: -2.11)
+  Quantum VQC        -> Malignant (Confidence: 73.1%, Score: -0.9997)
+  Fair Baseline PCA-8-> Malignant (Confidence: 100.0%)
+  Full Baseline 30-F -> Malignant (Confidence: 100.0%)
+  Consensus Status   -> Unanimous Consensus (3/3)
 
 Sample #20 (Ground Truth: Benign)
-  Classical -> Benign (Confidence: 99.8%)
-  Quantum   -> Benign (Confidence: 95.4%, Score: 3.03)
+  Quantum VQC        -> Benign (Confidence: 89.65%, Score: 2.1585)
+  Fair Baseline PCA-8-> Benign (Confidence: 99.12%)
+  Full Baseline 30-F -> Benign (Confidence: 99.81%)
+  Consensus Status   -> Unanimous Consensus (3/3)
 ```
 
 ---
 
-### Option C: Retrain & Export Master Model Checkpoints
+### Option C: Run Full Integration & Verification Test Suite
+Execute the automated 10-point test suite verifying imports, weights, inference, consensus logic, and REST endpoints:
+```bash
+python run.py --test
+# or: python test_integration.py
+```
+*Output Preview:*
+```
+Ran 10 tests in ~2.4s: OK
+✓ All models loaded cleanly
+✓ predict_all() returns quantum, fair_classical, classical, consensus
+✓ REST API /api/predict and /api/batch_predict verified
+```
+
+---
+
+### Option D: Retrain & Export Master Model Checkpoints
 To reproduce the full training pipeline, fit transformers, and update saved weights:
 ```bash
 python quantum/train_and_save_vqc_models.py
@@ -235,10 +254,10 @@ The Flask backend exposes the following REST endpoints for headless integration:
 
 | Method | Endpoint | Description | Sample Request / Response |
 |:---|:---|:---|:---|
-| `GET` | `/api/metadata` | Model specs, hyperparameters, and accuracies | `{"n_qubits": 8, "accuracy": {"vqc_test_acc": 0.9737, ...}}` |
-| `GET` | `/api/samples` | Curated clinical biopsy presets with ground truths | Key-value dictionary of verified malignant & benign cases |
-| `POST` | `/api/predict` | Dual quantum-classical inference on a 30-feature array | **Body:** `{"features": [17.99, 10.38, ...]}`<br>**Returns:** Quantum + Classical labels, confidences, qubit expectations |
-| `POST` | `/api/batch_predict` | Batch screening on multiple patient records | **Body:** `{"rows": [{"id": "P-01", "features": [...]}]}`<br>**Returns:** Aggregated stats, consensus rate, case results |
+| `GET` | `/api/metadata` | Model specs, hyperparameters, and accuracies | `{"n_qubits": 8, "accuracy": {"vqc_test_acc": 0.9737, "fair_baseline_test_acc": 0.9912, "full_baseline_test_acc": 0.9737}}` |
+| `GET` | `/api/samples` | Curated clinical biopsy presets with ground truths | Key-value dictionary of verified malignant & benign patient records |
+| `POST` | `/api/predict` | Tri-engine quantum-classical inference on a 30-feature array | **Body:** `{"features": [17.99, 10.38, ...]}`<br>**Returns:** `quantum` (8-Q VQC), `fair_classical` (PCA-8 LR), `classical` (30-F LR), `consensus` (unanimous flag, agreeing models), and 8 qubit expectations |
+| `POST` | `/api/batch_predict` | Batch screening on multiple patient records | **Body:** `{"rows": [{"id": "P-01", "features": [...]}]}`<br>**Returns:** Aggregated metrics (unanimous consensus %, quantum-fair agreement %), and per-case tri-engine verdicts |
 | `GET` | `/api/sample_csv` | Download sample CSV with 10 real biopsy records | Returns downloadable `qura_sample_patient_biopsies.csv` |
 | `GET` | `/api/feature_importance` | PCA component loading rankings for all 30 features | Returns ranked list sorted by diagnostic contribution |
 
@@ -248,7 +267,7 @@ The Flask backend exposes the following REST endpoints for headless integration:
 
 1. **Dimensionality Compression Without Information Loss**: Classical machine learning often requires large feature counts (all 30 features for 97.37% accuracy). QURA's VQC achieves parity (**97.37%**) utilizing only **8 PCA features** by leveraging high-dimensional quantum Hilbert state space.
 2. **Scalability to Multi-Omic & Genomic Medicine**: Modern diagnostic pathology increasingly involves high-throughput transcriptomics, methylation arrays, and sequencing datasets with $10^4+$ features. Quantum variational embeddings provide a scalable roadmap to classify ultra-high-dimensional biological spaces without classical memory bottlenecks.
-3. **Dual-Engine Clinical Validation**: Hybrid quantum-classical verification offers explainability and safety checks before clinical adoption.
+3. **Tri-Engine Clinical Validation & Safety**: Rather than relying on an isolated diagnostic black-box, QURA's cross-validation across an 8-qubit VQC, an 8-feature fair classical baseline, and a 30-feature full classical baseline provides explainability, safety checks, and high diagnostic confidence before clinical triage.
 
 ---
 
