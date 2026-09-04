@@ -150,14 +150,17 @@ def get_metadata():
             "vqc_test_acc": 0.9737,
             "vqc_train_acc": 0.9670,
             "classical_test_acc": 0.9737,
-            "classical_train_acc": 0.9824,
+            "classical_train_acc": 0.9868,
+            "classical_pca8_test_acc": 0.9912,
+            "classical_pca8_train_acc": 0.9780,
         },
         "history": [
             {"model": "VQC (6q, 2L Custom)", "accuracy": 0.8860},
             {"model": "VQC (8q, 3L Ring-CNOT)", "accuracy": 0.9386},
             {"model": "VQC (8q, 3L StronglyEntangling)", "accuracy": 0.9474},
             {"model": "VQC (Optimized Pipeline)", "accuracy": 0.9737},
-            {"model": "Classical Baseline", "accuracy": 0.9737},
+            {"model": "Classical Baseline (30-feat)", "accuracy": 0.9737},
+            {"model": "Classical Fair Baseline (PCA-8)", "accuracy": 0.9912},
         ],
     })
 
